@@ -28,9 +28,9 @@
 | 역할 | 이름 | GitHub |
 |------|----|--------|
 | 프로젝트 매니저 | 옥진석 | [[GitHub 링크]](https://github.com/JJOK97) |
-| 백엔드 개발 | 김다현 | [GitHub 링크] |
-| 백엔드 개발 | 권오빈 | [GitHub 링크] |
-| 백엔드 개발 | 차영주 | [GitHub 링크] |
+| 백엔드 개발 | 김다현 | [GitHub 링크](https://github.com/KDH0103) |
+| 백엔드 개발 | 권오빈 | [GitHub 링크](https://github.com/fivebin) |
+| 백엔드 개발 | 차영주 | [GitHub 링크](https://github.com/jbh6357) |
 
 <br>
 
