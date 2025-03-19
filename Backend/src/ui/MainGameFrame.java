@@ -1,45 +1,26 @@
 package ui;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.FontFormatException;
-import java.awt.FontMetrics;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
+import java.awt.Rectangle;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Image;
 import java.awt.Insets;
-import java.awt.RenderingHints;
-import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 
-import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 
-import contorller.UserController;
+import ui.common.UIConstants;
 import ui.components.PixelBackgroundPanel;
 import ui.components.PixelButton;
 import ui.components.PixelLabel;
@@ -47,13 +28,10 @@ import ui.components.PixelPasswordField;
 import ui.components.PixelTextField;
 
 /**
- * 게임 시작 화면을 구현한 UI 클래스
+ * 게임 시작 화면을 구현한 UI 클래스 (창 상태 유지 기능 추가)
  */
 public class MainGameFrame extends JFrame {
     private static final long serialVersionUID = 1L;
-    
-    // 컨트롤러
-    private UserController userController;
     
     // 컴포넌트
     private PixelTextField txtLoginId;
@@ -68,29 +46,43 @@ public class MainGameFrame extends JFrame {
     private boolean bounceUp = false;
     private int colorPhase = 0;
     
-    // 픽셀 폰트
-    private Font pixelFont;
-    private Font smallPixelFont;
-    private Font titleFont;
-    
-    // 화면 비율 관련 상수
-    private static final double SCREEN_WIDTH_PERCENT = 0.8;  // 화면 너비의 75%
-    private static final double SCREEN_HEIGHT_PERCENT = 0.8;  // 화면 높이의 80%
+    // 창 상태 유지 관련 변수
+    private static Rectangle frameBounds = null;
+    private static boolean isMaximized = false;
     
     /**
-     * 생성자
+     * 기본 생성자
      */
     public MainGameFrame() {
-        userController = new UserController();
+        this(null, false);
+    }
+    
+    /**
+     * 창 상태를 유지하는 생성자
+     * 
+     * @param bounds 이전 창의 경계값
+     * @param maximized 이전 창의 최대화 상태
+     */
+    public MainGameFrame(Rectangle bounds, boolean maximized) {
         
         setTitle("ZOOM Defense");
-        initializeFrameSize();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setResizable(true);
         
-        // 픽셀 폰트 로드 시도
-        loadPixelFont();
+        // 이전 창 크기 정보가 없는 경우 기본 크기 설정
+        if (bounds == null) {
+            setSize(UIConstants.getScreenSize());
+            setLocationRelativeTo(null);
+        } else {
+            // 이전 창의 경계값 설정
+            setBounds(bounds);
+        }
+        
+        // 최대화 상태 적용
+        if (maximized) {
+            setExtendedState(JFrame.MAXIMIZED_BOTH);
+        }
+        
+        setResizable(true);
         
         // 메인 패널 설정
         JPanel mainPanel = createMainPanel();
@@ -104,18 +96,14 @@ public class MainGameFrame extends JFrame {
             @Override
             public void componentResized(ComponentEvent e) {
                 adjustComponentSizes();
+                
+                // 창 상태 저장
+                isMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+                if (!isMaximized) {
+                    frameBounds = getBounds();
+                }
             }
         });
-    }
-    
-    /**
-     * 화면 크기를 화면 비율에 맞게 초기화
-     */
-    private void initializeFrameSize() {
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int width = (int)(screenSize.width * SCREEN_WIDTH_PERCENT);
-        int height = (int)(screenSize.height * SCREEN_HEIGHT_PERCENT);
-        setSize(width, height);
     }
     
     /**
@@ -126,23 +114,8 @@ public class MainGameFrame extends JFrame {
         int height = getHeight();
         
         // 폰트 크기 조정
-        int titleSize = Math.max(30, width / 25);
-        int normalSize = Math.max(16, width / 40);
-        int smallSize = Math.max(14, width / 50);
-        
-        // 타이틀 폰트 크기 조정
         if (lblTitle != null) {
-            try {
-                // 여기서는 이미 로드된 폰트 객체를 사용하되 크기만 조정
-                if (titleFont != null && titleFont.getName() != "맑은 고딕") {
-                    Font newTitleFont = titleFont.deriveFont(Font.BOLD, titleSize);
-                    lblTitle.setFont(newTitleFont);
-                } else {
-                    lblTitle.setFont(new Font("맑은 고딕", Font.BOLD, titleSize));
-                }
-            } catch (Exception e) {
-                lblTitle.setFont(new Font("맑은 고딕", Font.BOLD, titleSize));
-            }
+            lblTitle.setFont(UIConstants.getScaledTitleFont(width));
         }
         
         // 버튼 크기 조정
@@ -153,76 +126,8 @@ public class MainGameFrame extends JFrame {
             btnRegister.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
         }
         
-        // 텍스트 필드 크기는 GridBag을 통해 자동으로 조정되므로 별도 설정 불필요
-        
         revalidate();
         repaint();
-    }
-    
-    /**
-     * 픽셀 폰트 로드 메서드
-     */
-    private void loadPixelFont() {
-        // 기본 폰트 초기화 - 한글 지원 폰트 사용
-        pixelFont = new Font("맑은 고딕", Font.BOLD, 16);
-        smallPixelFont = new Font("맑은 고딕", Font.PLAIN, 14);
-        titleFont = new Font("맑은 고딕", Font.BOLD, 40);
-        
-        try {
-            // 영문용 픽셀 폰트 로드 시도
-            File engFontFile = new File("src/ui/fonts/pixel.ttf");
-            
-            if (engFontFile.exists()) {
-                try {
-                    Font pixelFontEnglish = Font.createFont(Font.TRUETYPE_FONT, engFontFile);
-                    pixelFontEnglish = pixelFontEnglish.deriveFont(Font.BOLD, 50f);
-                    titleFont = pixelFontEnglish;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else {
-                // 다른 경로 시도
-                engFontFile = new File("Backend/src/ui/fonts/pixel.ttf");
-                
-                if (engFontFile.exists()) {
-                    try {
-                        Font pixelFontEnglish = Font.createFont(Font.TRUETYPE_FONT, engFontFile);
-                        pixelFontEnglish = pixelFontEnglish.deriveFont(Font.BOLD, 50f);
-                        titleFont = pixelFontEnglish;
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-            
-            // 한글용 픽셀 폰트 로드 시도
-            File korFontFile = new File("src/ui/fonts/pixel_kr.ttf");
-            
-            if (korFontFile.exists()) {
-                try {
-                    Font pixelFontKorean = Font.createFont(Font.TRUETYPE_FONT, korFontFile);
-                    pixelFont = pixelFontKorean.deriveFont(Font.BOLD, 18f);
-                    smallPixelFont = pixelFontKorean.deriveFont(Font.PLAIN, 16f);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else {
-                // 다른 경로 시도
-                korFontFile = new File("Backend/src/ui/fonts/pixel_kr.ttf");
-                
-                if (korFontFile.exists()) {
-                    try {
-                        Font pixelFontKorean = Font.createFont(Font.TRUETYPE_FONT, korFontFile);
-                        pixelFont = pixelFontKorean.deriveFont(Font.BOLD, 18f);
-                        smallPixelFont = pixelFontKorean.deriveFont(Font.PLAIN, 16f);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
     
     /**
@@ -240,12 +145,12 @@ public class MainGameFrame extends JFrame {
         titlePanel.setBorder(new EmptyBorder(topMargin, 0, 0, 0));
         
         lblTitle = new PixelLabel("ZOOM DEFENSE", SwingConstants.CENTER);
-        lblTitle.setFont(titleFont);  // 픽셀 폰트 적용
-        lblTitle.setForeground(new Color(255, 215, 0)); // 골드 색상
+        lblTitle.setFont(UIConstants.getTitleFont());
+        lblTitle.setForeground(UIConstants.GOLD_COLOR);
         
         JLabel lblSubtitle = new PixelLabel("ZOOM 전파를 방해하는 적을 섬멸하라", SwingConstants.CENTER);
-        lblSubtitle.setFont(pixelFont);  // 한글 지원 폰트 사용
-        lblSubtitle.setForeground(Color.WHITE);
+        lblSubtitle.setFont(UIConstants.getPixelFont());
+        lblSubtitle.setForeground(UIConstants.WHITE_COLOR);
         lblSubtitle.setBorder(new EmptyBorder(25, 0, 0, 0)); // 서브타이틀 상단 여백 감소
         
         titlePanel.add(lblTitle, BorderLayout.CENTER);
@@ -272,28 +177,28 @@ public class MainGameFrame extends JFrame {
         
         // 로그인 레이블
         JLabel lblId = new PixelLabel("아이디:", SwingConstants.RIGHT);
-        lblId.setFont(pixelFont);
-        lblId.setForeground(Color.WHITE);
+        lblId.setFont(UIConstants.getPixelFont());
+        lblId.setForeground(UIConstants.WHITE_COLOR);
         gbc.gridx = 0;
         gbc.gridy = 0;
         loginPanel.add(lblId, gbc);
         
         // 아이디 입력 필드
-        txtLoginId = new PixelTextField(40, pixelFont);
+        txtLoginId = new PixelTextField(30, UIConstants.getPixelFont());
         gbc.gridx = 1;
         gbc.gridy = 0;
         loginPanel.add(txtLoginId, gbc);
         
         // 비밀번호 레이블
         JLabel lblPassword = new PixelLabel("비밀번호:", SwingConstants.RIGHT);
-        lblPassword.setFont(pixelFont);
-        lblPassword.setForeground(Color.WHITE);
+        lblPassword.setFont(UIConstants.getPixelFont());
+        lblPassword.setForeground(UIConstants.WHITE_COLOR);
         gbc.gridx = 0;
         gbc.gridy = 1;
         loginPanel.add(lblPassword, gbc);
         
         // 비밀번호 입력 필드
-        txtPassword = new PixelPasswordField(40, pixelFont);
+        txtPassword = new PixelPasswordField(30, UIConstants.getPixelFont());
         gbc.gridx = 1;
         gbc.gridy = 1;
         loginPanel.add(txtPassword, gbc);
@@ -303,7 +208,7 @@ public class MainGameFrame extends JFrame {
         buttonPanel.setOpaque(false);
         
         // 로그인 버튼
-        btnLogin = new PixelButton("로그인", pixelFont);
+        btnLogin = new PixelButton("로그인", UIConstants.getPixelFont());
         int buttonWidth = (int)(getWidth() * 0.15);
         int buttonHeight = (int)(getHeight() * 0.06); // 버튼 높이 약간 감소
         btnLogin.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
@@ -319,22 +224,25 @@ public class MainGameFrame extends JFrame {
         });
         
         // 회원가입 버튼
-        btnRegister = new PixelButton("회원가입", pixelFont);
+        btnRegister = new PixelButton("회원가입", UIConstants.getPixelFont());
         btnRegister.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
         btnRegister.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // 회원가입 화면으로 이동 - 새 창이 아닌 현재 창에서 화면 전환
-                dispose(); // 현재 창 닫기
-                LoginFrame loginFrame = new LoginFrame(true); // true 파라미터로 회원가입 모드 활성화
-                loginFrame.setVisible(true);
+                // 현재 창의 상태 저장
+                boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+                Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+                
+                // 회원가입 화면으로 이동 (창 상태 유지)
+                SignUpFrame signUpFrame = new SignUpFrame(currentBounds, currentMaximized);
+                signUpFrame.setVisible(true);
+                setVisible(false); // 현재 창은 숨기기
             }
         });
         
         // 버튼 순서 변경 - 로그인, 회원가입 순서로
         buttonPanel.add(btnRegister);
         buttonPanel.add(btnLogin);
-
         
         // 콘텐츠 패널에 로그인 패널과 버튼 패널 추가
         contentPanel.add(loginPanel, BorderLayout.CENTER);
@@ -398,4 +306,4 @@ public class MainGameFrame extends JFrame {
             }
         });
     }
-} 
+}
