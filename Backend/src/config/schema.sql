@@ -38,7 +38,8 @@ CREATE TABLE TOWERS (
     RANGE NUMBER DEFAULT 5,                  -- 공격 범위: 타워가 공격할 수 있는 범위
     ATTACK_SPEED NUMBER DEFAULT 1,           -- 공격 속도: 초당 공격 횟수
     COST NUMBER DEFAULT 100,                 -- 구매 비용: 타워 설치에 필요한 비용
-    UPGRADE_COST NUMBER DEFAULT 50           -- 업그레이드 비용: 타워 강화에 필요한 비용
+    UPGRADE_COST NUMBER DEFAULT 50,          -- 업그레이드 비용: 타워 강화에 필요한 비용
+    LEVEL NUMBER DEFAULT 1                   -- 타워 레벨(업그레이드 단계)
 );
 
 -- 타워 시퀀스
@@ -131,8 +132,7 @@ CREATE TABLE TOWER_PLACEMENTS (
     SESSION_ID NUMBER REFERENCES GAME_SESSIONS(SESSION_ID) NOT NULL,  -- 게임 세션 ID
     TOWER_ID NUMBER REFERENCES TOWERS(TOWER_ID) NOT NULL,  -- 타워 ID
     POSITION_X NUMBER NOT NULL,              -- X좌표
-    POSITION_Y NUMBER NOT NULL,              -- Y좌표
-    LEVEL NUMBER DEFAULT 1                   -- 타워 레벨(업그레이드 단계)
+    POSITION_Y NUMBER NOT NULL              -- Y좌표
 );
 
 -- 타워 배치 시퀀스
@@ -183,53 +183,3 @@ BEGIN
     FROM DUAL;
 END;
 /
-
--- 기본 타워 데이터 삽입
--- 1. 와이파이 안테나: 기본적인 방어타워로 적당한 공격력과 범위를 가진 타워입니다.
-INSERT INTO TOWERS (TOWER_NAME, DAMAGE, RANGE, ATTACK_SPEED, COST, UPGRADE_COST) 
-VALUES ('와이파이 안테나', 1, 3, 1.0, 50, 25);
-
--- 2. 헤드셋: 소리로 공격하는 타워로, 짧은 범위에서 높은 데미지를 줍니다.
-INSERT INTO TOWERS (TOWER_NAME, DAMAGE, RANGE, ATTACK_SPEED, COST, UPGRADE_COST) 
-VALUES ('헤드셋', 2, 2, 1.2, 100, 50);
-
--- 3. 라우터: 넓은 범위에서 공격할 수 있는 타워로, 여러 적을 동시에 타격합니다.
-INSERT INTO TOWERS (TOWER_NAME, DAMAGE, RANGE, ATTACK_SPEED, COST, UPGRADE_COST) 
-VALUES ('라우터', 1, 4, 1.5, 150, 75);
-
--- 4. 웹캠: 빠른 공격 속도를 가진 타워로, 적을 빠르게 발견하고 공격합니다.
-INSERT INTO TOWERS (TOWER_NAME, DAMAGE, RANGE, ATTACK_SPEED, COST, UPGRADE_COST) 
-VALUES ('웹캠', 3, 3, 1.8, 200, 100);
-
--- 5. 고성능 PC: 최상위 타워로, 높은 데미지로 강력한 적을 처치합니다.
-INSERT INTO TOWERS (TOWER_NAME, DAMAGE, RANGE, ATTACK_SPEED, COST, UPGRADE_COST) 
-VALUES ('고성능 PC', 5, 2, 1.5, 300, 150);
-
--- 기본 적 데이터 삽입
--- 1. 카메라 끊김: 빠르게 움직이는 약한 적으로, 화면을 흐리게 만듭니다.
-INSERT INTO ENEMIES (ENEMY_NAME, HEALTH, SPEED, REWARD, DAMAGE) 
-VALUES ('카메라 끊김', 5, 2, 5, 1);
-
--- 2. 소리 울림: 중간 속도의 적으로, 에코를 일으켜 소통을 방해합니다.
-INSERT INTO ENEMIES (ENEMY_NAME, HEALTH, SPEED, REWARD, DAMAGE) 
-VALUES ('소리 울림', 10, 1.5, 10, 1);
-
--- 3. 마이크 고장: 중간 체력의 적으로, 말할 수 없게 만듭니다.
-INSERT INTO ENEMIES (ENEMY_NAME, HEALTH, SPEED, REWARD, DAMAGE) 
-VALUES ('마이크 고장', 15, 1.2, 15, 2);
-
--- 4. 화면 멈춤: 체력이 높고 느린 적으로, 화면을 완전히 멈추게 합니다.
-INSERT INTO ENEMIES (ENEMY_NAME, HEALTH, SPEED, REWARD, DAMAGE) 
-VALUES ('화면 멈춤', 25, 0.8, 20, 3);
-
--- 5. 인터넷 끊김: 매우 강력하지만 느린 적으로, 수업 참여를 방해합니다.
-INSERT INTO ENEMIES (ENEMY_NAME, HEALTH, SPEED, REWARD, DAMAGE) 
-VALUES ('인터넷 끊김', 50, 0.5, 30, 4);
-
--- 6. 배터리 부족: 중간 체력의 적으로, 갑자기 기기의 전원을 끕니다.
-INSERT INTO ENEMIES (ENEMY_NAME, HEALTH, SPEED, REWARD, DAMAGE) 
-VALUES ('배터리 부족', 35, 1.0, 25, 3);
-
--- 7. 보스: 시스템 다운: 최종 보스로, 매우 강력하고 많은 데미지를 줍니다.
-INSERT INTO ENEMIES (ENEMY_NAME, HEALTH, SPEED, REWARD, DAMAGE) 
-VALUES ('보스: 시스템 다운', 100, 0.3, 50, 5); 
