@@ -215,11 +215,41 @@ public class MainGameFrame extends JFrame {
         btnLogin.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                // 로그인 기능 구현 예정
-                JOptionPane.showMessageDialog(MainGameFrame.this, 
-                        "로그인 기능은 아직 구현되지 않았습니다.", 
-                        "알림", 
-                        JOptionPane.INFORMATION_MESSAGE);
+                String loginId = txtLoginId.getText();
+                String password = new String(txtPassword.getPassword());
+                
+                // 입력 검증
+                if (loginId.trim().isEmpty() || password.trim().isEmpty()) {
+                    JOptionPane.showMessageDialog(MainGameFrame.this, 
+                            "아이디와 비밀번호를 입력해주세요.", 
+                            "로그인 오류", 
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                
+                // 임시 로그인 처리 (실제 컨트롤러 구현 전 하드코딩)
+                boolean loginSuccess = false;
+                
+                // 하드코딩된 계정 정보로 로그인 처리
+                if (loginId.equals("JSO") && password.equals("1234")) {
+                    loginSuccess = true;
+                }
+                
+                if (loginSuccess) {
+                    // 현재 창의 상태 저장
+                    boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+                    Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+                    
+                    // 게임 선택 화면으로 이동 (창 상태 유지)
+                    dispose();
+                    GameSelectionFrame gameSelectionFrame = new GameSelectionFrame(loginId, currentBounds, currentMaximized);
+                    gameSelectionFrame.setVisible(true);
+                } else {
+                    JOptionPane.showMessageDialog(MainGameFrame.this, 
+                            "아이디 또는 비밀번호가 올바르지 않습니다.", 
+                            "로그인 실패", 
+                            JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
         
