@@ -13,9 +13,9 @@ public class DBConnection {
     
     // DB 연결 정보
     private final String DRIVER = "oracle.jdbc.driver.OracleDriver";
-    private final String URL = "jdbc:oracle:thin:@localhost:1521:xe";
-    private final String USER = "hr";
-    private final String PASSWORD = "1234";
+    private final String URL = "jdbc:oracle:thin:@project-db-campus.smhrd.com:1523:xe";
+    private final String USER = "hapjeong_24SW_DS_p1_5";
+    private final String PASSWORD = "smhrd5";
     
     // 생성자는 private으로 외부에서 인스턴스 생성 방지
     private DBConnection() {
