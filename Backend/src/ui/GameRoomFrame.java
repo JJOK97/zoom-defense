@@ -12,20 +12,24 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
+import contorller.SessionController;
 import model.Session;
 import model.User;
 import ui.components.GameMapPanel;
 import ui.components.ResourcePanel;
-import ui.components.TowerSelectionPanel;
 import ui.components.WaveInfoPanel;
 import ui.components.common.PixelBackgroundPanel;
+import ui.components.common.PixelButton;
 import ui.components.common.UIConstants;
 
 /**
@@ -37,8 +41,10 @@ public class GameRoomFrame extends JFrame {
     // 게임 컴포넌트
     private GameMapPanel gameMapPanel;
     private ResourcePanel resourcePanel;
-    private TowerSelectionPanel towerSelectionPanel;
     private WaveInfoPanel waveInfoPanel;
+    private PixelButton btnPause;
+    private PixelButton btnSave;
+    private PixelButton btnExit;
     
     // 애니메이션 관련 변수
     private Timer gameTimer;
@@ -50,6 +56,9 @@ public class GameRoomFrame extends JFrame {
     // 사용자 및 세션 정보
     private User loggedInUser;
     private Session gameSession;
+    
+    // 게임 상태 변수
+    private boolean isPaused = false;
     
     /**
      * 새 게임 시작하는 생성자
@@ -92,7 +101,27 @@ public class GameRoomFrame extends JFrame {
      */
     private void initialize() {
         setTitle("ZOOM Defense - " + loggedInUser.getNickname() + "님의 게임");
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        
+        // 창 닫기 버튼 처리
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent windowEvent) {
+                confirmExit();
+            }
+        });
+        
+        // ESC 키로 일시정지
+        addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                    togglePause();
+                }
+            }
+        });
+        
+        setFocusable(true);
         
         // 창 크기가 설정되지 않은 경우 기본 크기 설정
         if (getBounds().width == 0 || getBounds().height == 0) {
@@ -105,6 +134,12 @@ public class GameRoomFrame extends JFrame {
         // 메인 패널 설정
         JPanel mainPanel = createMainPanel();
         add(mainPanel);
+        
+        // 게임맵에 초기 자금과 생명력 설정
+        if (gameMapPanel != null) {
+            gameMapPanel.setMoney(gameSession.getMoney());
+            gameMapPanel.setLife(gameSession.getLife());
+        }
         
         // 게임 타이머 시작
         startGameTimer();
@@ -134,8 +169,12 @@ public class GameRoomFrame extends JFrame {
         panel.setBorder(new EmptyBorder(10, 10, 10, 10));
         
         // 상단 패널 - 자원 및 웨이브 정보
-        JPanel topPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setOpaque(false);
+        
+        // 자원 및 웨이브 정보 패널
+        JPanel infoPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        infoPanel.setOpaque(false);
         
         // 자원 정보 패널 (생명력, 돈)
         resourcePanel = new ResourcePanel(gameSession.getLife(), gameSession.getMoney());
@@ -145,23 +184,65 @@ public class GameRoomFrame extends JFrame {
         waveInfoPanel = new WaveInfoPanel(gameSession.getWave());
         waveInfoPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
         
-        topPanel.add(resourcePanel);
-        topPanel.add(waveInfoPanel);
+        infoPanel.add(resourcePanel);
+        infoPanel.add(waveInfoPanel);
+        
+        // 게임 컨트롤 버튼 패널
+        JPanel controlPanel = new JPanel(new GridLayout(1, 3, 10, 0));
+        controlPanel.setOpaque(false);
+        controlPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        
+        // 일시정지 버튼
+        btnPause = new PixelButton("일시정지", UIConstants.getSmallPixelFont());
+        btnPause.setBackground(new Color(60, 60, 100));
+        btnPause.setBorderColor(new Color(100, 100, 180));
+        btnPause.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                togglePause();
+            }
+        });
+        
+        // 저장 버튼
+        btnSave = new PixelButton("저장", UIConstants.getSmallPixelFont());
+        btnSave.setBackground(new Color(60, 100, 60));
+        btnSave.setBorderColor(new Color(100, 180, 100));
+        btnSave.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                saveGame();
+            }
+        });
+        
+        // 나가기 버튼
+        btnExit = new PixelButton("나가기", UIConstants.getSmallPixelFont());
+        btnExit.setBackground(new Color(100, 60, 60));
+        btnExit.setBorderColor(new Color(180, 100, 100));
+        btnExit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                confirmExit();
+            }
+        });
+        
+        controlPanel.add(btnPause);
+        controlPanel.add(btnSave);
+        controlPanel.add(btnExit);
+        
+        topPanel.add(infoPanel, BorderLayout.CENTER);
+        topPanel.add(controlPanel, BorderLayout.EAST);
         
         // 중앙 패널 - 게임 맵
         gameMapPanel = new GameMapPanel();
         gameMapPanel.setBackground(new Color(50, 50, 50));
         gameMapPanel.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 2));
         
-        // 우측 사이드 패널 - 타워 선택
-        towerSelectionPanel = new TowerSelectionPanel();
-        towerSelectionPanel.setBackground(new Color(40, 40, 40, 200));
-        towerSelectionPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        // GameMapPanel과 WaveInfoPanel 연결
+        gameMapPanel.setWaveInfoPanel(waveInfoPanel);
         
         // 메인 패널에 배치
         panel.add(topPanel, BorderLayout.NORTH);
         panel.add(gameMapPanel, BorderLayout.CENTER);
-        panel.add(towerSelectionPanel, BorderLayout.EAST);
         
         return panel;
     }
@@ -175,16 +256,8 @@ public class GameRoomFrame extends JFrame {
         
         // 게임 맵 크기 조정
         if (gameMapPanel != null) {
-            // 게임 맵이 전체 화면의 70%를 차지하도록 설정
+            // 게임 맵이 전체 화면의 중앙을 차지하도록 설정
             gameMapPanel.adjustSize(width, height);
-        }
-        
-        // 타워 선택 패널 크기 조정
-        if (towerSelectionPanel != null) {
-            // 타워 패널의 너비는 전체 화면의 20%
-            int towerPanelWidth = Math.max(200, width / 5);
-            towerSelectionPanel.setPreferredSize(new Dimension(towerPanelWidth, height));
-            towerSelectionPanel.adjustSize(width, height);
         }
         
         // 자원 및 웨이브 정보 패널 크기 조정
@@ -196,6 +269,99 @@ public class GameRoomFrame extends JFrame {
         
         revalidate();
         repaint();
+    }
+    
+    /**
+     * 게임 일시정지/재개 토글
+     */
+    private void togglePause() {
+        isPaused = !isPaused;
+        
+        if (isPaused) {
+            gameTimer.stop();
+            btnPause.setText("계속하기");
+        } else {
+            gameTimer.start();
+            btnPause.setText("일시정지");
+        }
+    }
+    
+    /**
+     * 현재 게임 상태 저장
+     */
+    private void saveGame() {
+        try {
+            // 게임 일시정지
+            if (!isPaused) {
+                togglePause();
+            }
+            
+            // 현재 게임 상태 업데이트
+            gameSession.setLife(gameMapPanel.getLife());
+            gameSession.setMoney(gameMapPanel.getMoney());
+            gameSession.setScore(gameSession.getScore());
+            gameSession.setWave(waveInfoPanel.getCurrentWave());
+            
+            // 세션 컨트롤러로 게임 상태 저장
+            SessionController sessionController = new SessionController();
+            boolean success = sessionController.saveGameState(gameSession);
+            
+            if (success) {
+                JOptionPane.showMessageDialog(this, "게임이 저장되었습니다.", "저장 완료", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "게임 저장에 실패했습니다.", "저장 실패", JOptionPane.ERROR_MESSAGE);
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "게임 저장 중 오류가 발생했습니다: " + ex.getMessage(), "오류", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+    
+    /**
+     * 게임 나가기 확인
+     */
+    private void confirmExit() {
+        // 게임 일시정지
+        if (!isPaused) {
+            togglePause();
+        }
+        
+        int option = JOptionPane.showConfirmDialog(this, 
+                "게임을 저장하시겠습니까?", 
+                "게임 나가기", 
+                JOptionPane.YES_NO_CANCEL_OPTION);
+        
+        if (option == JOptionPane.YES_OPTION) {
+            // 저장 후 나가기
+            saveGame();
+            exitGame();
+        } else if (option == JOptionPane.NO_OPTION) {
+            // 저장하지 않고 나가기
+            exitGame();
+        } else {
+            // 취소 - 게임 계속
+            if (isPaused) {
+                togglePause();
+            }
+        }
+    }
+    
+    /**
+     * 게임 나가기
+     */
+    private void exitGame() {
+        if (gameTimer != null) {
+            gameTimer.stop();
+        }
+        
+        // 현재 창의 상태 저장
+        boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+        Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+        
+        // 게임 선택 화면으로 이동
+        dispose();
+        GameSelectionFrame selectionFrame = new GameSelectionFrame(loggedInUser, currentBounds, currentMaximized);
+        selectionFrame.setVisible(true);
     }
     
     /**
@@ -220,6 +386,10 @@ public class GameRoomFrame extends JFrame {
         // 업데이트 수행
         if (gameMapPanel != null) {
             gameMapPanel.updateGameState();
+            
+            // 게임맵으로부터 생명력과 자금 데이터 가져오기
+            gameSession.setLife(gameMapPanel.getLife());
+            gameSession.setMoney(gameMapPanel.getMoney());
         }
         
         // 자원 정보 업데이트
@@ -231,15 +401,23 @@ public class GameRoomFrame extends JFrame {
         if (waveInfoPanel != null) {
             waveInfoPanel.updateWaveInfo(gameSession.getWave());
         }
+        
+        // 게임 종료 조건 체크
+        if (gameSession.getLife() <= 0) {
+            gameOver();
+        }
     }
     
     /**
      * 게임 종료 처리
      */
-    public void endGame() {
+    private void gameOver() {
         if (gameTimer != null) {
             gameTimer.stop();
         }
+        
+        JOptionPane.showMessageDialog(this, "게임 오버! 최종 웨이브: " + gameSession.getWave() + ", 점수: " + gameSession.getScore(), 
+                "게임 종료", JOptionPane.INFORMATION_MESSAGE);
         
         // 현재 창의 상태 저장
         boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
@@ -247,7 +425,7 @@ public class GameRoomFrame extends JFrame {
         
         // 게임 결과 화면으로 이동 또는 메인 메뉴로 돌아가기
         dispose();
-        GameSelectionFrame selectionFrame = new GameSelectionFrame(loggedInUser);
+        GameSelectionFrame selectionFrame = new GameSelectionFrame(loggedInUser, currentBounds, currentMaximized);
         selectionFrame.setVisible(true);
     }
 } 

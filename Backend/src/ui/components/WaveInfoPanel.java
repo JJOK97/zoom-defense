@@ -31,8 +31,8 @@ public class WaveInfoPanel extends JPanel {
     
     // 현재 웨이브 정보
     private int currentWave;
-    private int enemiesKilled = 0;
-    private int totalEnemies = 10; // 웨이브별 적 수는 실제 구현에서 계산될 것
+    public int enemiesKilled = 0;
+    public int totalEnemies = 10; // 웨이브별 적 수는 실제 구현에서 계산될 것
     
     /**
      * 생성자
@@ -124,9 +124,7 @@ public class WaveInfoPanel extends JPanel {
             // 새 웨이브에 맞는 적 수로 업데이트
             this.totalEnemies = 10 + (wave * 5);
             this.enemiesKilled = 0;
-            progressEnemyKill.setMaximum(totalEnemies);
-            progressEnemyKill.setValue(enemiesKilled);
-            lblEnemyValue.setText(enemiesKilled + " / " + totalEnemies);
+            updateEnemyKilled(enemiesKilled, totalEnemies);
         }
     }
     
@@ -155,6 +153,28 @@ public class WaveInfoPanel extends JPanel {
             progressEnemyKill.setForeground(new Color(50, 205, 50));
             lblEnemyValue.setForeground(new Color(200, 255, 200));
         }
+    }
+    
+    /**
+     * 적 한 마리 처치시 카운트 증가
+     */
+    public void enemyKilled() {
+        enemiesKilled++;
+        updateEnemyKilled(enemiesKilled, totalEnemies);
+    }
+    
+    /**
+     * 현재 웨이브 가져오기
+     */
+    public int getCurrentWave() {
+        return currentWave;
+    }
+    
+    /**
+     * 다음 웨이브로 진행
+     */
+    public void nextWave() {
+        updateWaveInfo(currentWave + 1);
     }
     
     /**

@@ -12,7 +12,9 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseMotionAdapter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
 /**
@@ -28,19 +30,35 @@ public class GameMapPanel extends JPanel {
     
     // 게임 오브젝트 위치 관리
     private int[][] towerMap;       // 타워가 배치된 위치 (0: 빈 공간, >0: 타워 ID)
+    private int[][] towerLevels;    // 타워 레벨 (1, 2, 3)
     private List<Point> pathPoints; // 적이 이동하는 경로 포인트
     private Point selectedCell;     // 현재 선택된 셀
     private Point hoveredCell;      // 마우스가 위치한 셀
     
     // 게임 오브젝트 정보
     private List<Enemy> enemies;    // 현재 맵에 있는 적
-    private int selectedTowerId = 0; // 현재 선택된 타워 ID (0: 선택 없음)
+    private int money = 100;        // 보유 금액
+    private int life = 100;         // 남은 생명력
+    
+    // 타워 정보 (상수, 실제로는 DB에서 로드)
+    private static final int TOWER_COST = 50;            // 타워 구매 비용
+    private static final int TOWER_UPGRADE_COST = 100;   // 타워 업그레이드 비용
+    
+    // 연결된 UI 컴포넌트
+    private WaveInfoPanel waveInfoPanel;
     
     /**
      * 기본 생성자
      */
     public GameMapPanel() {
         initialize();
+    }
+    
+    /**
+     * 웨이브 정보 패널 설정
+     */
+    public void setWaveInfoPanel(WaveInfoPanel waveInfoPanel) {
+        this.waveInfoPanel = waveInfoPanel;
     }
     
     /**
@@ -51,6 +69,7 @@ public class GameMapPanel extends JPanel {
         
         // 그리드 설정
         towerMap = new int[gridRows][gridColumns];
+        towerLevels = new int[gridRows][gridColumns];
         
         // 적 이동 경로 설정 (임시)
         initializeDefaultPath();
@@ -69,21 +88,61 @@ public class GameMapPanel extends JPanel {
                 // 맵 범위 확인
                 if (row >= 0 && row < gridRows && col >= 0 && col < gridColumns) {
                     // 경로와 겹치는지 확인
-                    if (!isPathCell(row, col)) {
-                        // 타워 설치 또는 업그레이드 가능한 위치
-                        selectedCell = new Point(col, row);
-                        
-                        // 타워가 이미 있는지 확인
-                        if (towerMap[row][col] > 0) {
-                            // 타워 업그레이드 또는 정보 표시
-                            System.out.println("타워 선택: " + towerMap[row][col] + " at (" + row + ", " + col + ")");
-                        } else {
-                            // 새 타워 설치
-                            System.out.println("타워 설치 위치 선택: (" + row + ", " + col + ")");
-                        }
-                        
-                        repaint();
+                    if (isPathCell(row, col)) {
+                        return;
                     }
+                    
+                    // 타워가 없는 경우 타워 설치
+                    if (towerMap[row][col] == 0) {
+                        if (money >= TOWER_COST) {
+                            // 타워 생성 로직
+                            Random random = new Random();
+                            int towerId = random.nextInt(3) + 1; // 랜덤 타워 ID (1~3)
+                            
+                            if (placeTower(row, col, towerId)) {
+                                // 비용 차감
+                                money -= TOWER_COST;
+                                JOptionPane.showMessageDialog(GameMapPanel.this, 
+                                        "타워가 설치되었습니다! (레벨 1)", 
+                                        "타워 설치", 
+                                        JOptionPane.INFORMATION_MESSAGE);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(GameMapPanel.this, 
+                                    "자금이 부족합니다!", 
+                                    "타워 설치 불가", 
+                                    JOptionPane.WARNING_MESSAGE);
+                        }
+                    } 
+                    // 타워가 있는 경우 업그레이드
+                    else {
+                        if (towerLevels[row][col] < 3) {
+                            if (money >= TOWER_UPGRADE_COST) {
+                                if (upgradeTower(row, col)) {
+                                    // 비용 차감
+                                    money -= TOWER_UPGRADE_COST;
+                                    JOptionPane.showMessageDialog(GameMapPanel.this, 
+                                            "타워가 레벨 " + towerLevels[row][col] + "로 업그레이드되었습니다!", 
+                                            "타워 업그레이드", 
+                                            JOptionPane.INFORMATION_MESSAGE);
+                                }
+                            } else {
+                                JOptionPane.showMessageDialog(GameMapPanel.this, 
+                                        "자금이 부족합니다!", 
+                                        "타워 업그레이드 불가", 
+                                        JOptionPane.WARNING_MESSAGE);
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(GameMapPanel.this, 
+                                    "이미 최대 레벨입니다!", 
+                                    "업그레이드 불가", 
+                                    JOptionPane.WARNING_MESSAGE);
+                        }
+                    }
+                    
+                    // 선택된 셀 업데이트
+                    selectedCell = new Point(col, row);
+                    repaint();
                 }
             }
         });
@@ -111,15 +170,34 @@ public class GameMapPanel extends JPanel {
     private void initializeDefaultPath() {
         pathPoints = new ArrayList<>();
         
-        // 경로 포인트 추가 (입구에서 출구까지)
-        pathPoints.add(new Point(0, 5));      // 입구
-        pathPoints.add(new Point(5, 5));      // 오른쪽으로 이동
-        pathPoints.add(new Point(5, 2));      // 위로 이동
-        pathPoints.add(new Point(10, 2));     // 오른쪽으로 이동
-        pathPoints.add(new Point(10, 8));     // 아래로 이동
-        pathPoints.add(new Point(15, 8));     // 오른쪽으로 이동
-        pathPoints.add(new Point(15, 3));     // 위로 이동
-        pathPoints.add(new Point(19, 3));     // 출구
+        // 간단한 S자 경로 설정
+        // 시작점 (왼쪽 중앙)
+        pathPoints.add(new Point(0, 7));
+        
+        // 오른쪽으로 이동
+        for (int i = 1; i < 5; i++) {
+            pathPoints.add(new Point(i, 7));
+        }
+        
+        // 아래로 이동
+        for (int i = 8; i < 12; i++) {
+            pathPoints.add(new Point(4, i));
+        }
+        
+        // 오른쪽으로 이동
+        for (int i = 5; i < 15; i++) {
+            pathPoints.add(new Point(i, 11));
+        }
+        
+        // 위로 이동
+        for (int i = 10; i >= 3; i--) {
+            pathPoints.add(new Point(14, i));
+        }
+        
+        // 오른쪽으로 이동 (도착점)
+        for (int i = 15; i <= 19; i++) {
+            pathPoints.add(new Point(i, 3));
+        }
     }
     
     /**
@@ -129,24 +207,11 @@ public class GameMapPanel extends JPanel {
      * @return 경로 포함 여부
      */
     private boolean isPathCell(int row, int col) {
-        // 경로 포인트 간 직선 체크
-        for (int i = 0; i < pathPoints.size() - 1; i++) {
-            Point p1 = pathPoints.get(i);
-            Point p2 = pathPoints.get(i + 1);
-            
-            // 수직 경로
-            if (p1.x == p2.x && p1.x == col && 
-                Math.min(p1.y, p2.y) <= row && row <= Math.max(p1.y, p2.y)) {
-                return true;
-            }
-            
-            // 수평 경로
-            if (p1.y == p2.y && p1.y == row && 
-                Math.min(p1.x, p2.x) <= col && col <= Math.max(p1.x, p2.x)) {
+        for (Point p : pathPoints) {
+            if (p.y == row && p.x == col) {
                 return true;
             }
         }
-        
         return false;
     }
     
@@ -163,6 +228,7 @@ public class GameMapPanel extends JPanel {
             towerMap[row][col] == 0 && !isPathCell(row, col)) {
             
             towerMap[row][col] = towerId;
+            towerLevels[row][col] = 1; // 초기 레벨은 1
             return true;
         }
         
@@ -180,20 +246,22 @@ public class GameMapPanel extends JPanel {
         if (row >= 0 && row < gridRows && col >= 0 && col < gridColumns &&
             towerMap[row][col] > 0) {
             
-            // 타워 ID 증가 (임시 - 실제로는 타워 객체의 레벨 또는 다른 타워로 교체)
-            towerMap[row][col] += 100;
+            // 최대 레벨 확인
+            if (towerLevels[row][col] >= 3) {
+                return false;
+            }
+            
+            // 레벨 업그레이드
+            towerLevels[row][col]++;
+            
+            // 랜덤하게 타워 종류 변경 (업그레이드시 랜덤 타워로 변경)
+            Random random = new Random();
+            towerMap[row][col] = random.nextInt(3) + 1; // 랜덤 타워 ID (1~3)
+            
             return true;
         }
         
         return false;
-    }
-    
-    /**
-     * 현재 타워 선택 설정
-     * @param towerId 선택한 타워 ID
-     */
-    public void setSelectedTower(int towerId) {
-        this.selectedTowerId = towerId;
     }
     
     /**
@@ -202,6 +270,20 @@ public class GameMapPanel extends JPanel {
      */
     public void addEnemy(Enemy enemy) {
         enemies.add(enemy);
+    }
+    
+    /**
+     * 자금 설정
+     */
+    public void setMoney(int money) {
+        this.money = money;
+    }
+    
+    /**
+     * 생명력 설정
+     */
+    public void setLife(int life) {
+        this.life = life;
     }
     
     /**
@@ -216,23 +298,48 @@ public class GameMapPanel extends JPanel {
     }
     
     /**
-     * 적 이동 및 상태 업데이트
+     * 적 업데이트
      */
     private void updateEnemies() {
-        List<Enemy> toRemove = new ArrayList<>();
+        // 제거할 적 목록
+        List<Enemy> removeList = new ArrayList<>();
         
+        // 모든 적 이동 및 상태 체크
         for (Enemy enemy : enemies) {
-            // 적 이동
             enemy.move();
             
-            // 제거할 적 확인 (사망 또는 목적지 도달)
-            if (enemy.isDead() || enemy.hasReachedEnd()) {
-                toRemove.add(enemy);
+            // 적이 사망한 경우
+            if (enemy.isDead()) {
+                removeList.add(enemy);
+                money += 10; // 적 처치 보상
+                
+                // 웨이브 정보 패널에 적 처치 알림
+                if (waveInfoPanel != null) {
+                    waveInfoPanel.enemyKilled();
+                    
+                    // 모든 적 처치 시 다음 웨이브로 진행
+                    if (waveInfoPanel.getCurrentWave() < 20 && // 최대 웨이브 제한
+                        waveInfoPanel.enemiesKilled >= waveInfoPanel.totalEnemies) {
+                        waveInfoPanel.nextWave();
+                    }
+                }
+            }
+            
+            // 적이 끝까지 도달한 경우
+            if (enemy.hasReachedEnd()) {
+                removeList.add(enemy);
+                life -= 10; // 생명력 감소
             }
         }
         
-        // 제거할 적 정리
-        enemies.removeAll(toRemove);
+        // 제거할 적 처리
+        enemies.removeAll(removeList);
+        
+        // 테스트용: 주기적으로 적 생성 (실제로는 웨이브 시스템에서 관리)
+        if (Math.random() < 0.02) {
+            Point startPoint = pathPoints.get(0);
+            enemies.add(new Enemy(startPoint.x, startPoint.y));
+        }
     }
     
     /**
@@ -509,5 +616,19 @@ public class GameMapPanel extends JPanel {
             health -= damage;
             if (health < 0) health = 0;
         }
+    }
+    
+    /**
+     * 현재 자금 반환
+     */
+    public int getMoney() {
+        return money;
+    }
+    
+    /**
+     * 현재 생명력 반환
+     */
+    public int getLife() {
+        return life;
     }
 } 

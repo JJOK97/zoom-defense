@@ -94,13 +94,14 @@ public class GameSelectionFrame extends JFrame {
 	/**
 	 * 창 상태를 유지하는 생성자
 	 * 
-	 * @param nickname  로그인한 사용자 닉네임
-	 * @param bounds    이전 창의 경계값
+	 * @param user     로그인한 사용자 정보
+	 * @param bounds   이전 창의 경계값
 	 * @param maximized 이전 창의 최대화 상태
 	 */
-	public GameSelectionFrame(String nickname, Rectangle bounds, boolean maximized) {
+	public GameSelectionFrame(User user, Rectangle bounds, boolean maximized) {
+		this.loggedInUser = user;
 
-		setTitle("ZOOM Defense - 게임 선택 - " + nickname + "님");
+		setTitle("ZOOM Defense - 게임 선택 - " + user.getNickname() + "님");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		// 이전 창 크기 정보가 없는 경우 기본 크기 설정
