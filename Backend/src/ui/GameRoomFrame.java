@@ -144,6 +144,11 @@ public class GameRoomFrame extends JFrame {
         // 게임 업데이트 타이머 설정
         setupGameTimer();
         
+        // 게임 시작 (첫 웨이브 시작)
+        if (gameMapPanel != null) {
+            gameMapPanel.startWave();
+        }
+        
         // 창 크기 변경 시 컴포넌트 크기 조정
         addComponentListener(new ComponentAdapter() {
             @Override
@@ -389,13 +394,63 @@ public class GameRoomFrame extends JFrame {
             // 게임 맵 업데이트
             if (gameMapPanel != null) {
                 gameMapPanel.update();
+                
+                // UI 정보 업데이트
+                resourcePanel.updateResources(
+                    gameMapPanel.getLife(),
+                    gameMapPanel.getMoney()
+                );
             }
-            
-            // 게임 정보 업데이트 (필요한 경우)
-            // ...
         });
         
         // 타이머 시작
         gameTimer.start();
+    }
+    
+    /**
+     * 게임 오버 처리
+     */
+    public void handleGameOver() {
+        // 게임 타이머 정지
+        if (gameTimer != null) {
+            gameTimer.stop();
+        }
+        
+        // 게임 선택 화면으로 이동
+        dispose();
+        
+        // 현재 창의 상태 저장
+        boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+        Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+        
+        // 게임 선택 화면으로 돌아가기
+        GameSelectionFrame selectionFrame = new GameSelectionFrame(loggedInUser, currentBounds, currentMaximized);
+        selectionFrame.setVisible(true);
+    }
+    
+    /**
+     * 게임 승리 처리
+     */
+    public void handleGameWin() {
+        // 게임 타이머 정지
+        if (gameTimer != null) {
+            gameTimer.stop();
+        }
+        
+        // 게임 정보 저장
+        int finalWave = waveInfoPanel.getCurrentWave();
+        gameSession.setScore(finalWave * 100); // 점수 계산
+        saveGame(); // 게임 상태 저장
+        
+        // 게임 선택 화면으로 이동
+        dispose();
+        
+        // 현재 창의 상태 저장
+        boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+        Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+        
+        // 게임 선택 화면으로 돌아가기
+        GameSelectionFrame selectionFrame = new GameSelectionFrame(loggedInUser, currentBounds, currentMaximized);
+        selectionFrame.setVisible(true);
     }
 } 

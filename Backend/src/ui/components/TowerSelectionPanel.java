@@ -5,15 +5,19 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.SwingConstants;
 
+import contorller.TowerController;
+import model.Tower;
 import ui.components.common.PixelButton;
 import ui.components.common.PixelLabel;
 import ui.components.common.UIConstants;
@@ -37,11 +41,18 @@ public class TowerSelectionPanel extends JPanel {
     // 현재 사용 가능한 자금
     private int availableMoney = 100;
     
+    // 선택된 타워 정보
+    private Tower selectedTower;
+    private GameMapPanel gameMapPanel;
+    
     /**
      * 기본 생성자
      */
     public TowerSelectionPanel() {
         initialize();
+        
+        // 타워 목록 로드
+        loadTowersFromDB();
     }
     
     /**
@@ -247,8 +258,37 @@ public class TowerSelectionPanel extends JPanel {
      * 현재 선택된 타워 구매
      */
     private void buySelectedTower() {
-        // 구매 로직 (API 연동 필요)
-        System.out.println("타워 구매 요청");
+        if (gameMapPanel != null && selectedTower != null) {
+            // 선택된 셀이 있는지 확인
+            Point selectedCell = gameMapPanel.getSelectedCell();
+            
+            if (selectedCell != null) {
+                int row = selectedCell.y;
+                int col = selectedCell.x;
+                
+                // 타워 설치 요청
+                boolean success = gameMapPanel.placeTower(row, col, selectedTower);
+                
+                if (success) {
+                    // 자금 업데이트
+                    updateAvailableMoney(gameMapPanel.getMoney());
+                    
+                    // 설치 후 선택 해제
+                    gameMapPanel.clearSelection();
+                } else {
+                    // 실패 메시지
+                    JOptionPane.showMessageDialog(this, 
+                        "이 위치에 타워를 설치할 수 없습니다.", 
+                        "설치 실패", 
+                        JOptionPane.WARNING_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "타워를 설치할 위치를 선택해주세요.", 
+                    "위치 미선택", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+        }
     }
     
     /**
@@ -294,5 +334,150 @@ public class TowerSelectionPanel extends JPanel {
         
         revalidate();
         repaint();
+    }
+
+    /**
+     * GameMapPanel 설정
+     */
+    public void setGameMapPanel(GameMapPanel panel) {
+        this.gameMapPanel = panel;
+    }
+
+    /**
+     * 타워 선택 시 정보 표시
+     * @param tower 선택된 타워 객체
+     */
+    private void selectTower(Tower tower) {
+        selectedTower = tower;
+        selectedTowerInfoPanel.removeAll();
+        
+        // 타워 이름
+        PixelLabel lblName = new PixelLabel(tower.getTowerName(), SwingConstants.CENTER);
+        lblName.setForeground(UIConstants.GOLD_COLOR);
+        lblName.setFont(UIConstants.getPixelFont());
+        lblName.setAlignmentX(CENTER_ALIGNMENT);
+        
+        // 타워 비용
+        PixelLabel lblCost = new PixelLabel("비용: $" + tower.getCost(), SwingConstants.CENTER);
+        lblCost.setForeground(Color.WHITE);
+        lblCost.setFont(UIConstants.getSmallPixelFont());
+        lblCost.setAlignmentX(CENTER_ALIGNMENT);
+        
+        // 타워 속성
+        PixelLabel lblStats = new PixelLabel("<html><div style='text-align: center;'>" +
+                "공격력: " + tower.getDamage() + "<br>" +
+                "범위: " + tower.getRange() + "<br>" +
+                "공격속도: " + tower.getAttackSpeed() +
+                "</div></html>", SwingConstants.CENTER);
+        lblStats.setForeground(Color.LIGHT_GRAY);
+        lblStats.setFont(UIConstants.getSmallPixelFont());
+        lblStats.setAlignmentX(CENTER_ALIGNMENT);
+        
+        // 패널에 추가
+        selectedTowerInfoPanel.add(lblName);
+        selectedTowerInfoPanel.add(lblCost);
+        selectedTowerInfoPanel.add(lblStats);
+        
+        // 구매 버튼 활성화 (비용이 가능한 경우)
+        btnBuyTower.setEnabled(tower.getCost() <= availableMoney);
+        
+        selectedTowerInfoPanel.revalidate();
+        selectedTowerInfoPanel.repaint();
+    }
+
+    /**
+     * 타워 목록 로드
+     */
+    private void loadTowersFromDB() {
+        towerListPanel.removeAll();
+        
+        try {
+            TowerController towerController = new TowerController();
+            Tower tower = towerController.getFirstTower();
+            
+            if (tower != null) {
+                // 타워 정보 패널 생성
+                JPanel towerPanel = createTowerPanel(tower);
+                
+                // 타워 리스트에 추가
+                towerPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+                towerPanel.setPreferredSize(new Dimension(200, 50));
+                towerListPanel.add(towerPanel);
+                
+                // 간격 추가
+                JPanel spacer = new JPanel();
+                spacer.setOpaque(false);
+                spacer.setPreferredSize(new Dimension(200, 5));
+                towerListPanel.add(spacer);
+            } else {
+                // 타워가 없을 경우 메시지 표시
+                PixelLabel lblNoTower = new PixelLabel("사용 가능한 타워가 없습니다", SwingConstants.CENTER);
+                lblNoTower.setForeground(Color.LIGHT_GRAY);
+                lblNoTower.setFont(UIConstants.getSmallPixelFont());
+                towerListPanel.add(lblNoTower);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            // 오류 메시지 표시
+            PixelLabel lblError = new PixelLabel("타워 정보를 불러올 수 없습니다", SwingConstants.CENTER);
+            lblError.setForeground(Color.RED);
+            lblError.setFont(UIConstants.getSmallPixelFont());
+            towerListPanel.add(lblError);
+        }
+        
+        towerListPanel.revalidate();
+        towerListPanel.repaint();
+    }
+
+    /**
+     * 타워 패널 생성
+     */
+    private JPanel createTowerPanel(final Tower tower) {
+        // 타워 정보 패널
+        JPanel towerPanel = new JPanel();
+        towerPanel.setLayout(new BorderLayout());
+        towerPanel.setOpaque(false);
+        towerPanel.setBackground(new Color(60, 60, 60, 150));
+        towerPanel.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 1));
+        
+        // 타워 이름 및 비용
+        JPanel infoPanel = new JPanel(new BorderLayout());
+        infoPanel.setOpaque(false);
+        
+        PixelLabel lblName = new PixelLabel(tower.getTowerName(), SwingConstants.LEFT);
+        lblName.setForeground(Color.WHITE);
+        lblName.setFont(UIConstants.getSmallPixelFont());
+        
+        PixelLabel lblCost = new PixelLabel("비용: $" + tower.getCost(), SwingConstants.RIGHT);
+        lblCost.setForeground(UIConstants.GOLD_COLOR);
+        lblCost.setFont(UIConstants.getSmallPixelFont());
+        
+        infoPanel.add(lblName, BorderLayout.WEST);
+        infoPanel.add(lblCost, BorderLayout.EAST);
+        
+        // 타워 패널에 추가
+        towerPanel.add(infoPanel, BorderLayout.CENTER);
+        
+        // 타워 선택 이벤트
+        towerPanel.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                selectTower(tower);
+            }
+            
+            @Override
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                towerPanel.setBackground(new Color(80, 80, 100, 180));
+                towerPanel.setBorder(BorderFactory.createLineBorder(new Color(150, 150, 200), 1));
+            }
+            
+            @Override
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                towerPanel.setBackground(new Color(60, 60, 60, 150));
+                towerPanel.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 1));
+            }
+        });
+        
+        return towerPanel;
     }
 } 
