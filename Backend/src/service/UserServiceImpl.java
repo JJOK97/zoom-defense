@@ -40,9 +40,19 @@ public class UserServiceImpl implements UserService {
         
         return userDAO.registerUser(user);
     }
-
+    
     @Override
     public boolean isIdDuplicated(String loginId) {
         return userDAO.checkDuplicateId(loginId);
+    }
+
+    @Override
+    public User validate(String userLoginId, String password) {
+        return userDAO.validateLogin(userLoginId, password);
+    }
+
+    @Override
+    public User getUserById(int userId) {
+        return userDAO.getUserById(userId);
     }
 } 

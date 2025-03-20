@@ -35,4 +35,24 @@ public class UserController {
     public boolean checkDuplicateId(String loginId) {
         return userService.isIdDuplicated(loginId);
     }
+    
+    /**
+     * 로그인 인증 메소드
+     * @param userLoginId 체크할 아이디
+     * @param password 체크할 비밀번호
+     * @return 인증된 사용자 정보, 실패 시 null
+     */
+    public User validateLogin(String userLoginId, String password) {
+        return userService.validate(userLoginId, password);
+    }
+    
+    /**
+     * 사용자 ID로 사용자 정보 조회
+     * @param userId 사용자 ID
+     * @return 사용자 정보, 없으면 null
+     */
+    public User getUserById(int userId) {
+        return userService.getUserById(userId);
+    }
+    
 } 

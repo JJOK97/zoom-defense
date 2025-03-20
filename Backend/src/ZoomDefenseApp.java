@@ -1,7 +1,7 @@
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
-import ui.LoginFrame;
+import ui.MainGameFrame;
 
 /**
  * ZOOM Defense 게임의 메인 애플리케이션 클래스
@@ -23,11 +23,11 @@ public class ZoomDefenseApp {
         SwingUtilities.invokeLater(new Runnable() {
             @Override
             public void run() {
-                // 회원가입 화면 표시
-                LoginFrame loginFrame = new LoginFrame();
-                loginFrame.setVisible(true);
+                // 게임 시작 화면 표시
+                MainGameFrame mainGameFrame = new MainGameFrame();
+                mainGameFrame.setVisible(true);
                 
-                System.out.println("ZOOM Defense 회원가입 화면이 시작되었습니다.");
+                System.out.println("ZOOM Defense 게임이 시작되었습니다.");
             }
         });
     }

@@ -19,4 +19,19 @@ public interface UserService {
      * @return 중복 여부 (true: 중복, false: 사용 가능)
      */
     boolean isIdDuplicated(String loginId);
+    
+    /** 
+     * 로그인 정보 확인
+     * @param userLoginId 체크할 아이디
+     * @param password 체크할 비밀번호
+     * @return 인증된 사용자 정보, 실패 시 null
+     */
+	User validate(String userLoginId, String password);
+	
+	/**
+     * 사용자 ID로 사용자 정보 조회
+     * @param userId 사용자 ID
+     * @return 사용자 정보, 없으면 null
+     */
+	User getUserById(int userId);
 } 
