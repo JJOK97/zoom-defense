@@ -16,6 +16,10 @@ public class TowerController {
 		this.towerService = new TowerServicelmpl();
 		this.towerPlacementService = new TowerPlacementServicelmpl();
 	}
+	
+	public Tower getTowerById(int id) {
+		return towerService.getTowerById(id);
+	}
 
 	/**
 	 * 1단계 타워 목록 조회

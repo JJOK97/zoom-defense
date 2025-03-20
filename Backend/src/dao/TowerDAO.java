@@ -313,87 +313,133 @@ public class TowerDAO {
 	}
 
 	public int getTowerId(int sessionId, int x, int y) {
-		int success = 0;
-		String sql = "SELECT TOWER_ID FROM TOWER_PLACEMENTS WHERE POSITOON_X = ? AND POSITON_Y = ?";
-
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement(sql);
-			pstmt.setInt(1, x);
-			pstmt.setInt(2, y);
-
-			success = pstmt.executeUpdate();
-
-		} catch (SQLException e) {
-			System.out.println("타워 업그레이드 실패");
-		} finally {
-			close();
-		}
-
-		return success;
-
-	}
-
-	/**
-	 * 타워 ID로 타워 정보 가져오기
-	 */
-	public Tower getTowerById(int towerId) {
-		Tower tower = null;
-		String sql = "SELECT * FROM TOWERS WHERE TOWER_ID = ?";
-
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement(sql);
-			pstmt.setInt(1, towerId);
-			rs = pstmt.executeQuery();
-
-			if (rs.next()) {
-				String towerName = rs.getString("TOWER_NAME");
-				int towerLevel = rs.getInt("TOWER_LEVEL");
-				int damage = rs.getInt("DAMAGE");
-				int range = rs.getInt("RANGE");
-				int attackSpeed = rs.getInt("ATTACK_SPEED");
-				int cost = rs.getInt("COST");
-				int upgradeCost = rs.getInt("UPGRADE_COST");
-
-				tower = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
-			}
-		} catch (SQLException e) {
-			System.out.println("타워 정보 조회 실패: " + e.getMessage());
-		} finally {
-			close();
-		}
-		return tower;
-	}
-
-	/**
-	 * 세션의 모든 타워 배치 정보 조회
-	 */
-	public List<TowerPlacement> getTowerPlacementsBySessionId(int sessionId) {
-		List<TowerPlacement> placements = new ArrayList<>();
-		String sql = "SELECT * FROM TOWER_PLACEMENTS WHERE SESSION_ID = ?";
+		int towerId = 0;
+		String sql = "SELECT TOWER_ID FROM TOWER_PLACEMENTS WHERE SESSION_ID = ? AND POSITION_X = ? AND POSITION_Y = ?";
 
 		try {
 			conn = getConnection();
 			pstmt = conn.prepareStatement(sql);
 			pstmt.setInt(1, sessionId);
+			pstmt.setInt(2, x);
+			pstmt.setInt(3, y);
+			
 			rs = pstmt.executeQuery();
-
-			while (rs.next()) {
-				int placementId = rs.getInt("PLACEMENT_ID");
-				int towerId = rs.getInt("TOWER_ID");
-				int positionX = rs.getInt("POSITION_X");
-				int positionY = rs.getInt("POSITION_Y");
-
-				TowerPlacement placement = new TowerPlacement(placementId, sessionId, positionX, positionY);
-				placement.setTowerId(towerId);
-				placements.add(placement);
+			
+			if (rs.next()) {
+				towerId = rs.getInt("TOWER_ID");
+				System.out.println("타워 ID 조회 결과: " + towerId + " at (" + x + "," + y + ")");
+			} else {
+				System.out.println("타워를 찾을 수 없음: " + x + "," + y);
 			}
+
 		} catch (SQLException e) {
-			System.out.println("타워 배치 정보 조회 실패: " + e.getMessage());
+			System.out.println("타워 ID 조회 실패: " + e.getMessage());
+			e.printStackTrace();
 		} finally {
 			close();
 		}
+
+		return towerId;
+	}
+
+	/**
+	 * 타워 ID로 타워 정보 조회
+	 * @param towerId 타워 ID
+	 * @return 타워 정보
+	 */
+	public Tower getTowerById(int towerId) {
+		Tower tower = null;
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		
+		try {
+			conn = getConnection();
+			String sql = "SELECT * FROM TOWERS WHERE TOWER_ID = ?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, towerId);
+			rs = pstmt.executeQuery();
+			
+			if (rs.next()) {
+				tower = new Tower();
+				tower.setTowerId(rs.getInt("TOWER_ID"));
+				tower.setTowerName(rs.getString("TOWER_NAME"));
+				tower.setTowerLevel(rs.getInt("TOWER_LEVEL"));
+				tower.setDamage(rs.getInt("DAMAGE"));
+				tower.setRange(rs.getInt("RANGE"));
+				tower.setAttackSpeed(rs.getInt("ATTACK_SPEED"));
+				tower.setCost(rs.getInt("COST"));
+				tower.setUpgradeCost(rs.getInt("UPGRADE_COST"));
+				
+				System.out.println("타워 정보 조회됨: ID=" + tower.getTowerId() + 
+								   ", 이름=" + tower.getTowerName() + 
+								   ", 레벨=" + tower.getTowerLevel());
+			} else {
+				System.out.println("타워 ID " + towerId + "에 해당하는 타워 정보가 없음");
+			}
+		} catch (SQLException e) {
+			System.out.println("타워 정보 조회 중 에러 발생: " + e.getMessage());
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) rs.close();
+				if (pstmt != null) pstmt.close();
+				if (conn != null) conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		return tower;
+	}
+
+	/**
+	 * 세션 ID로 타워 배치 정보 목록 조회
+	 * @param sessionId 세션 ID
+	 * @return 타워 배치 정보 목록
+	 */
+	public List<TowerPlacement> getTowerPlacementsBySessionId(int sessionId) {
+		List<TowerPlacement> placements = new ArrayList<>();
+		Connection conn = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		
+		try {
+			conn = getConnection();
+			String sql = "SELECT * FROM TOWER_PLACEMENTS WHERE SESSION_ID = ?";
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, sessionId);
+			rs = pstmt.executeQuery();
+			
+			System.out.println("세션 ID " + sessionId + "에 대한 타워 배치 정보 조회 중...");
+			
+			while (rs.next()) {
+				TowerPlacement placement = new TowerPlacement();
+				placement.setTowerId(rs.getInt("TOWER_ID"));
+				placement.setSessionId(rs.getInt("SESSION_ID"));
+				placement.setPositionX(rs.getInt("POSITION_X"));
+				placement.setPositionY(rs.getInt("POSITION_Y"));
+				
+				placements.add(placement);
+				System.out.println("타워 배치 정보 찾음: TowerId=" + placement.getTowerId() + 
+								   ", X=" + placement.getPositionX() + 
+								   ", Y=" + placement.getPositionY());
+			}
+			
+			System.out.println("총 " + placements.size() + "개의 타워 배치 정보 조회됨");
+		} catch (SQLException e) {
+			System.out.println("타워 배치 정보 조회 중 에러 발생: " + e.getMessage());
+			e.printStackTrace();
+		} finally {
+			try {
+				if (rs != null) rs.close();
+				if (pstmt != null) pstmt.close();
+				if (conn != null) conn.close();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}
+		
 		return placements;
 	}
 

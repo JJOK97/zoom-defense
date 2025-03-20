@@ -23,6 +23,9 @@ public class Tower {
 		this.towerLevel = towerlevel;
 	}
 
+	public Tower() {
+	}
+
 	public int getTowerId() {
 		return towerId;
 	}

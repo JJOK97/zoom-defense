@@ -39,6 +39,7 @@ import service.TowerService;
 import service.TowerServicelmpl;
 import service.TowerPlacementService;
 import service.TowerPlacementServicelmpl;
+import dao.TowerDAO;
 
 /**
  * 게임 맵을 표시하고 타워 배치 및 게임 진행을 관리하는 패널
@@ -124,6 +125,11 @@ public class GameMapPanel extends JPanel {
         void onTowerSelected(int towerId, int row, int col);
         void onEmptyCellSelected(int row, int col);
     }
+
+    // 카운트다운 상태 변수
+    private int countdown = 0;
+    private long countdownStartTime = 0;
+    private boolean isCountingDown = false;
 
     /**
      * 기본 생성자
@@ -532,24 +538,8 @@ public class GameMapPanel extends JPanel {
                 
                 // 마지막 웨이브인지 확인
                 if (currentWave < 20) {
-                    // 다음 웨이브 자동 시작 (3초 후)
-                    Timer waveTimer = new Timer(3000, new ActionListener() {
-                        @Override
-                        public void actionPerformed(ActionEvent e) {
-                            nextWave();
-                            ((Timer)e.getSource()).stop();
-                        }
-                    });
-                    waveTimer.setRepeats(false);
-                    waveTimer.start();
-                    
-                    // 안내 메시지
-                    JOptionPane.showMessageDialog(
-                        this, 
-                        "웨이브 " + currentWave + " 완료!\n3초 후 다음 웨이브가 시작됩니다.",
-                        "웨이브 완료", 
-                        JOptionPane.INFORMATION_MESSAGE
-                    );
+                    // 카운트다운 표시 및 다음 웨이브 자동 시작
+                    startWaveCountdown();
                 } else {
                     // 모든 웨이브 클리어
                     gameWin();
@@ -691,10 +681,48 @@ public class GameMapPanel extends JPanel {
     }
     
     // 타워 배치 효과 표시
-    private void showTowerPlacementEffect(int col, int row) {
-        // 여기에 타워 생성 애니메이션 추가 가능
-        // 간단한 구현: 콘솔에 로그 출력
+    public void showTowerPlacementEffect(int col, int row) {
+        // 콘솔에 로그 출력
         System.out.println("🏗️ 타워 건설 중... 위치: (" + col + "," + row + ")");
+        
+        // 타워 배치 효과 애니메이션 추가
+        try {
+            // 그리드 좌표를 픽셀 좌표로 변환
+            int pixelX = col * GRID_SIZE;
+            int pixelY = row * GRID_SIZE;
+            
+            // 임시 효과를 위한 애니메이션 (간단한 플래시 효과)
+            final int duration = 500; // 0.5초
+            final int steps = 5;
+            final int delay = duration / steps;
+            
+            new Thread(() -> {
+                try {
+                    for (int i = 0; i < steps; i++) {
+                        final int alpha = (i % 2 == 0) ? 200 : 100; // 깜빡임 효과
+                        
+                        SwingUtilities.invokeLater(() -> {
+                            Graphics2D g2d = (Graphics2D) getGraphics();
+                            if (g2d != null) {
+                                g2d.setColor(new Color(255, 255, 0, alpha));
+                                g2d.fillRect(pixelX, pixelY, GRID_SIZE, GRID_SIZE);
+                                g2d.dispose();
+                            }
+                        });
+                        
+                        Thread.sleep(delay);
+                    }
+                    
+                    // 마지막 repaint로 원래 상태로 복원
+                    repaint();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        } catch (Exception e) {
+            System.out.println("타워 배치 효과 표시 중 오류 발생: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
     
     /**
@@ -704,102 +732,96 @@ public class GameMapPanel extends JPanel {
      * @return 업그레이드 성공 여부
      */
     public boolean upgradeTower(int row, int col) {
-        // 타워가 있는지 확인
+        // 빈 칸이면 업그레이드 불가능
         if (towerMap[row][col] <= 0) {
-            System.out.println("업그레이드 실패: 타워가 없습니다.");
+            System.out.println("업그레이드 실패: 타워가 없는 위치");
             return false;
         }
         
-        // 현재 타워 레벨 (ID)
         int currentTowerId = towerMap[row][col];
+        System.out.println("업그레이드 시도: 현재 타워 ID = " + currentTowerId);
         
-        // 업그레이드 비용 (임시 설정)
-        int upgradeCost = 50;
-        if (currentTowerId == 2) {
-            upgradeCost = 100; // 2레벨에서 3레벨로 업그레이드 비용
+        // 타워 정보 가져오기
+        TowerController towerController = new TowerController();
+        Tower currentTower = towerController.getTowerById(currentTowerId);
+        
+        if (currentTower == null) {
+            System.out.println("업그레이드 실패: 타워 정보를 찾을 수 없음");
+            return false;
         }
         
-        // 돈이 충분한지 확인
+        System.out.println("현재 타워 정보: ID=" + currentTower.getTowerId() + 
+                          ", 레벨=" + currentTower.getTowerLevel() + 
+                          ", 이름=" + currentTower.getTowerName());
+        
+        // 이미 최고 레벨인 경우
+        if (currentTower.getTowerLevel() >= 3) {
+            System.out.println("업그레이드 실패: 이미 최고 레벨 타워");
+            JOptionPane.showMessageDialog(this, "이미 최고 레벨의 타워입니다.");
+            return false;
+        }
+        
+        // 업그레이드 비용 확인
+        int upgradeCost = currentTower.getUpgradeCost();
+        
         if (money < upgradeCost) {
-            System.out.println("업그레이드 실패: 돈 부족 (필요: " + upgradeCost + ", 보유: " + money + ")");
+            // 자금 부족
+            System.out.println("업그레이드 실패: 자금 부족 (필요: " + upgradeCost + ", 보유: " + money + ")");
+            JOptionPane.showMessageDialog(this, "타워 업그레이드 비용이 부족합니다.\n필요 비용: " + upgradeCost + ", 보유 자금: " + money);
             return false;
         }
         
-        // 세션 ID 가져오기
+        // 타워 업그레이드 수행
+        Tower upgradedTower = null;
+        
+        // 타워 레벨에 따라 다음 레벨 타워 선택
+        if (currentTower.getTowerLevel() == 1) {
+            upgradedTower = towerController.getSecondTower();
+        } else if (currentTower.getTowerLevel() == 2) {
+            upgradedTower = towerController.getThirdTower();
+        }
+        
+        if (upgradedTower == null) {
+            System.out.println("업그레이드 실패: 다음 레벨 타워를 가져올 수 없음");
+            return false;
+        }
+        
+        // 타워 맵 업데이트
+        towerMap[row][col] = upgradedTower.getTowerId();
+        
+        // 비용 차감
+        money -= upgradeCost;
+        
+        // DB에도 업데이트
+        TowerPlacementService towerPlacementService = new TowerPlacementServicelmpl();
         int sessionId = 0;
-        try {
-            Container container = this;
-            while (container != null && !(container instanceof GameRoomFrame)) {
-                container = container.getParent();
+        
+        // 상위 컴포넌트에서 세션 ID 가져오기
+        Container parent = getParent();
+        while (parent != null) {
+            if (parent instanceof GameRoomFrame) {
+                sessionId = ((GameRoomFrame) parent).getGameSession().getSessionId();
+                break;
             }
-            
-            if (container instanceof GameRoomFrame) {
-                GameRoomFrame gameRoom = (GameRoomFrame) container;
-                sessionId = gameRoom.getGameSession().getSessionId();
-            } else {
-                System.out.println("GameRoomFrame을 찾을 수 없습니다.");
-                return false;
-            }
-        } catch (Exception e) {
-            System.out.println("세션 ID 가져오기 실패: " + e.getMessage());
-            e.printStackTrace();
-            return false;
+            parent = parent.getParent();
         }
         
-        // 타워 서비스
-        TowerService towerService = new TowerServicelmpl();
-        
-        try {
-            // 타워 레벨에 따라 다른 업그레이드 처리
-            if (currentTowerId == 1) {
-                // 1레벨 타워를 2레벨로 업그레이드
-                Tower upgradedTower = towerService.getSecondTower();
-                if (upgradedTower != null) {
-                    // 로컬 맵 업데이트
-                    towerMap[row][col] = 2; // 2레벨로 설정
-                    // 돈 차감
-                    money -= upgradeCost;
-                    
-                    // DB 업데이트 시도
-                    TowerPlacementService service = new TowerPlacementServicelmpl();
-                    service.upgradeTower(sessionId, col, row);
-                    
-                    System.out.println("타워 업그레이드 성공: 1레벨 -> 2레벨, 위치=(" + col + "," + row + ")");
-                    repaint();
-                    return true;
-                }
-            } else if (currentTowerId == 2) {
-                // 2레벨 타워를 3레벨로 업그레이드
-                Tower upgradedTower = towerService.getThirdTower();
-                if (upgradedTower != null) {
-                    // 로컬 맵 업데이트
-                    towerMap[row][col] = 3; // 3레벨로 설정
-                    // 돈 차감
-                    money -= upgradeCost;
-                    
-                    // DB 업데이트 시도
-                    TowerPlacementService service = new TowerPlacementServicelmpl();
-                    service.upgradeTower(sessionId, col, row);
-                    
-                    System.out.println("타워 업그레이드 성공: 2레벨 -> 3레벨, 위치=(" + col + "," + row + ")");
-                    repaint();
-                    return true;
-                }
-            } else if (currentTowerId == 3) {
-                // 이미 최대 레벨
-                System.out.println("업그레이드 실패: 이미 최대 레벨입니다.");
-                return false;
-            } else {
-                // 알 수 없는 타워 레벨
-                System.out.println("업그레이드 실패: 알 수 없는 타워 레벨 - " + currentTowerId);
-                return false;
-            }
-        } catch (Exception e) {
-            System.out.println("타워 업그레이드 중 예외 발생: " + e.getMessage());
-            e.printStackTrace();
+        if (sessionId > 0) {
+            boolean dbUpdateSuccess = towerPlacementService.upgradeTower(sessionId, col, row);
+            System.out.println("DB 업데이트 결과: " + (dbUpdateSuccess ? "성공" : "실패"));
         }
         
-        return false;
+        // 효과음 및 애니메이션 추가
+        showTowerPlacementEffect(col, row);
+        
+        // 화면 갱신
+        repaint();
+        
+        System.out.println("타워 업그레이드 완료: ID=" + upgradedTower.getTowerId() + 
+                           ", 레벨=" + upgradedTower.getTowerLevel() + 
+                           ", 이름=" + upgradedTower.getTowerName());
+        
+        return true;
     }
     
     /**
@@ -811,16 +833,46 @@ public class GameMapPanel extends JPanel {
             int y = enemy.getY();
             int size = enemy.getSize();
             
-            // 적 몸체 그리기
-            if (enemy.getEnemyId() % 3 == 0) {
-                // 보스급 적 - 붉은색
-                g2d.setColor(new Color(200, 0, 0));
-            } else if (enemy.getEnemyId() % 2 == 0) {
-                // 중급 적 - 녹색
-                g2d.setColor(new Color(0, 150, 0));
-            } else {
-                // 일반 적 - 파란색
-                g2d.setColor(new Color(0, 0, 150));
+            // 적 몸체 그리기 - 적 ID에 따라 색상 결정
+            switch (enemy.getEnemyId()) {
+                case 1: // 슬라임
+                    g2d.setColor(new Color(0, 150, 255)); // 파란색
+                    break;
+                case 2: // 좀비
+                    g2d.setColor(new Color(100, 255, 100)); // 연두색
+                    break;
+                case 3: // 고블린
+                    g2d.setColor(new Color(50, 200, 50)); // 녹색
+                    break;
+                case 4: // 오크
+                    g2d.setColor(new Color(100, 150, 100)); // 어두운 녹색
+                    break;
+                case 5: // 암살자
+                    g2d.setColor(new Color(50, 50, 50)); // 검은색
+                    break;
+                case 6: // 마법사
+                    g2d.setColor(new Color(150, 50, 200)); // 보라색
+                    break;
+                case 7: // 트롤
+                    g2d.setColor(new Color(150, 200, 50)); // 황토색
+                    break;
+                case 8: // 드래곤
+                    g2d.setColor(new Color(200, 50, 50)); // 빨간색
+                    break;
+                case 9: // 데몬
+                    g2d.setColor(new Color(255, 50, 0)); // 주황색
+                    break;
+                case 10: // 고대 드래곤
+                    g2d.setColor(new Color(200, 200, 0)); // 금색
+                    break;
+                case 11: // 마왕
+                    g2d.setColor(new Color(150, 0, 0)); // 암적색
+                    break;
+                case 12: // 지옥의 군주
+                    g2d.setColor(new Color(255, 0, 0)); // 밝은 빨간색
+                    break;
+                default:
+                    g2d.setColor(new Color(100, 100, 100)); // 기본 회색
             }
             g2d.fillOval(x, y, size, size);
             
@@ -904,6 +956,9 @@ public class GameMapPanel extends JPanel {
         
         // 공격 애니메이션 그리기
         drawAttackAnimations(g2d);
+        
+        // 카운트다운 텍스트 그리기
+        drawCountdown(g2d);
         
         g2d.dispose();
     }
@@ -1183,9 +1238,37 @@ public class GameMapPanel extends JPanel {
     private void spawnEnemy(boolean isBoss) {
         EnemyController enemyController = new EnemyController();
         
-        // 보스 웨이브인 경우 보스 적 생성 (ID: 5로 가정)
-        // 아닌 경우 일반 적 랜덤 생성 (ID: 1~4 중 랜덤)
-        int enemyId = isBoss ? 5 : (new Random().nextInt(4) + 1);
+        int enemyId;
+        
+        // 보스 웨이브인 경우 보스 적 생성
+        if (isBoss) {
+            if (currentWave == 10) {
+                enemyId = 10; // 10웨이브 보스: 고대 드래곤
+            } else if (currentWave == 20) {
+                enemyId = 12; // 20웨이브 보스: 지옥의 군주
+            } else {
+                enemyId = 11; // 기타 보스 웨이브: 마왕
+            }
+        } else {
+            // 웨이브에 따라 등장 가능한 적 종류 결정
+            if (currentWave <= 5) {
+                // 1-5 웨이브: 슬라임, 좀비, 고블린 중 랜덤
+                enemyId = new Random().nextInt(3) + 1;
+            } else if (currentWave <= 10) {
+                // 6-10 웨이브: 슬라임~오크 중 랜덤
+                enemyId = new Random().nextInt(4) + 1;
+            } else if (currentWave <= 15) {
+                // 11-15 웨이브: 고블린~마법사 중 랜덤
+                enemyId = new Random().nextInt(4) + 3;
+            } else {
+                // 16-20 웨이브: 마법사~데몬 중 랜덤 (드래곤도 간혹 등장)
+                enemyId = new Random().nextInt(4) + 6;
+                // 10% 확률로 드래곤 등장
+                if (new Random().nextInt(10) == 0) {
+                    enemyId = 8;
+                }
+            }
+        }
         
         // 웨이브가 높을수록 체력 증가
         int healthMultiplier = 1 + (currentWave / 5);
@@ -1212,8 +1295,8 @@ public class GameMapPanel extends JPanel {
                 enemy.setPathIndex(0);
             }
             
-            // 보스인 경우 크기 두 배
-            if (isBoss) {
+            // 보스 또는 강력한 적(드래곤, 데몬, 마왕, 지옥의 군주)인 경우 크기 두 배
+            if (isBoss || enemyId >= 8) {
                 enemy.setSize(GRID_SIZE * 2);
             } else {
                 enemy.setSize(GRID_SIZE);
@@ -1354,9 +1437,8 @@ public class GameMapPanel extends JPanel {
      * 세션에서 타워 배치 정보 로드
      * @param sessionId 세션 ID
      */
-    public void loadTowerPlacements(int sessionId) {
-        SessionService sessionService = new SessionServiceImpl();
-        TowerService towerService = new TowerServicelmpl();
+    public List<TowerPlacement> loadTowerPlacements(int sessionId) {
+        System.out.println("GameMapPanel: 타워 배치 정보 로드 시작 - 세션 ID = " + sessionId);
         
         // 기존 타워 맵 초기화
         for (int i = 0; i < gridRows; i++) {
@@ -1365,35 +1447,43 @@ public class GameMapPanel extends JPanel {
             }
         }
         
-        // 저장된 타워 배치 정보를 로드
-        List<TowerPlacement> placements = sessionService.loadTowerPlacements(sessionId);
-        if (placements != null) {
+        // 세션에서 저장된 타워 배치 정보를 로드 (DAO 직접 사용)
+        TowerDAO towerDAO = new TowerDAO();
+        List<TowerPlacement> placements = towerDAO.getTowerPlacementsBySessionId(sessionId);
+        
+        if (placements != null && !placements.isEmpty()) {
+            System.out.println("불러온 타워 배치 정보: " + placements.size() + "개");
+            
             for (TowerPlacement placement : placements) {
                 int x = placement.getPositionX();
                 int y = placement.getPositionY();
                 int towerId = placement.getTowerId();
                 
+                System.out.println("타워 배치 정보: TowerId=" + towerId + ", X=" + x + ", Y=" + y);
+                
                 // 맵 범위 내에 있는지 확인
                 if (y >= 0 && y < gridRows && x >= 0 && x < gridColumns) {
-                    // 타워 타입에 따라 배치
-                    Tower tower = null;
-                    if (towerId == 1) {
-                        tower = towerService.getFirstTower();
-                    } else if (towerId == 2) {
-                        tower = towerService.getSecondTower();
-                    } else if (towerId == 3) {
-                        tower = towerService.getThirdTower();
-                    }
+                    // 타워 정보 가져오기
+                    Tower tower = towerDAO.getTowerById(towerId);
                     
                     if (tower != null) {
+                        // 타워 맵에 배치
                         towerMap[y][x] = towerId;
-                        System.out.println("타워 로드: " + x + ", " + y + " - 타워ID: " + towerId);
+                        System.out.println("타워 배치 완료: " + x + ", " + y + " - 타워ID: " + towerId + ", 타워명: " + tower.getTowerName());
+                    } else {
+                        System.out.println("타워 정보를 찾을 수 없음: TowerId=" + towerId);
                     }
+                } else {
+                    System.out.println("잘못된 타워 위치: " + x + ", " + y);
                 }
             }
+        } else {
+            System.out.println("타워 배치 정보가 없음");
         }
+        
         repaint(); // 화면 갱신
         System.out.println("타워 배치 정보 로드 완료");
+        return placements;
     }
     
     private void drawAttackAnimations(Graphics2D g2d) {
@@ -1455,5 +1545,63 @@ public class GameMapPanel extends JPanel {
     // 타워 선택 리스너 설정 메서드
     public void setTowerSelectListener(TowerSelectListener listener) {
         this.towerSelectListener = listener;
+    }
+
+    /**
+     * 웨이브 카운트다운 시작
+     */
+    private void startWaveCountdown() {
+        countdown = 3;
+        isCountingDown = true;
+        countdownStartTime = System.currentTimeMillis();
+        
+        // 카운트다운 타이머 시작
+        Timer countdownTimer = new Timer(1000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                countdown--;
+                if (countdown <= 0) {
+                    // 카운트다운 종료, 다음 웨이브 시작
+                    isCountingDown = false;
+                    ((Timer)e.getSource()).stop();
+                    nextWave();
+                }
+                repaint(); // 화면 갱신
+            }
+        });
+        countdownTimer.start();
+        
+        // 화면 갱신
+        repaint();
+    }
+
+    /**
+     * 카운트다운 텍스트 그리기 (paintComponent에서 호출)
+     */
+    private void drawCountdown(Graphics2D g2d) {
+        if (isCountingDown && countdown > 0) {
+            int width = getWidth();
+            int height = getHeight();
+            
+            // 반투명 배경
+            g2d.setColor(new Color(0, 0, 0, 150));
+            g2d.fillRect(0, 0, width, height);
+            
+            // 웨이브 완료 텍스트
+            g2d.setColor(Color.WHITE);
+            g2d.setFont(new Font("Arial", Font.BOLD, 30));
+            String completeText = "웨이브 " + currentWave + " 완료!";
+            FontMetrics metrics = g2d.getFontMetrics();
+            int textWidth = metrics.stringWidth(completeText);
+            g2d.drawString(completeText, (width - textWidth) / 2, height / 2 - 50);
+            
+            // 카운트다운 숫자
+            g2d.setColor(Color.YELLOW);
+            g2d.setFont(new Font("Arial", Font.BOLD, 72));
+            String countText = String.valueOf(countdown);
+            metrics = g2d.getFontMetrics();
+            textWidth = metrics.stringWidth(countText);
+            g2d.drawString(countText, (width - textWidth) / 2, height / 2 + 50);
+        }
     }
 } 

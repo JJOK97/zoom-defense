@@ -321,31 +321,48 @@ public class GameSelectionFrame extends JFrame {
 		try {
 			// 세션 컨트롤러로 새 게임 세션 생성
 			SessionController sessionController = new SessionController();
+			System.out.println("새 게임 세션 생성 시작: 사용자 ID = " + loggedInUser.getUserId());
+			
 			int sessionId = sessionController.createSession(loggedInUser.getUserId());
+			System.out.println("세션 컨트롤러에서 반환된 세션 ID: " + sessionId);
 			
 			if (sessionId > 0) {
-				// 세션 생성 성공 - 게임 세션 객체 생성
-				Session gameSession = new Session();
-				gameSession.setSessionId(sessionId);
-				gameSession.setUserId(loggedInUser.getUserId());
-				gameSession.setLife(100);  // 초기 생명력
-				gameSession.setMoney(100); // 초기 자금
-				gameSession.setScore(0);   // 초기 점수
-				gameSession.setWave(1);    // 초기 웨이브
+				// 세션 생성 성공 - 세션 ID로 세션 정보 로드
+				System.out.println("세션 ID가 유효함: " + sessionId);
+				
+				// 세션 객체 로드 (이미 데이터베이스에 저장된 정보)
+				Session gameSession = sessionController.loadGameState(sessionId);
+				
+				if (gameSession == null) {
+					System.out.println("세션 객체를 로드할 수 없음. 수동으로 Session 객체 생성");
+					// 세션 객체 수동 생성
+					gameSession = new Session();
+					gameSession.setSessionId(sessionId);
+					gameSession.setUserId(loggedInUser.getUserId());
+					gameSession.setLife(100);  // 초기 생명력
+					gameSession.setMoney(100); // 초기 자금
+					gameSession.setScore(0);   // 초기 점수
+					gameSession.setWave(1);    // 초기 웨이브
+				} else {
+					System.out.println("세션 객체 로드 성공: " + gameSession.getSessionId());
+				}
 				
 				// 현재 창의 상태 저장
 				boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
 				Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
 				
 				// 게임 룸 화면으로 이동
+				System.out.println("게임 룸으로 이동: 세션 ID = " + gameSession.getSessionId());
 				dispose();
 				GameRoomFrame gameRoom = new GameRoomFrame(loggedInUser, gameSession, currentBounds, currentMaximized);
 				gameRoom.setVisible(true);
 			} else {
 				// 세션 생성 실패
+				System.out.println("세션 생성 실패: 세션 ID = " + sessionId);
 				JOptionPane.showMessageDialog(this, "게임 세션 생성에 실패했습니다.", "오류", JOptionPane.ERROR_MESSAGE);
 			}
 		} catch (Exception ex) {
+			System.out.println("새 게임 시작 중 예외 발생: " + ex.getMessage());
 			JOptionPane.showMessageDialog(this, "새 게임 시작 중 오류가 발생했습니다: " + ex.getMessage(), "오류",
 					JOptionPane.ERROR_MESSAGE);
 			ex.printStackTrace();

@@ -9,12 +9,11 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Rectangle;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.util.List;
 
 import javax.swing.BorderFactory;
 import javax.swing.JFrame;
@@ -23,9 +22,12 @@ import javax.swing.JPanel;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
-import contorller.SessionController;
+import dao.TowerDAO;
 import model.Session;
+import model.TowerPlacement;
 import model.User;
+import service.SessionService;
+import service.SessionServiceImpl;
 import ui.components.GameMapPanel;
 import ui.components.ResourcePanel;
 import ui.components.TowerSelectionPanel;
@@ -33,8 +35,6 @@ import ui.components.WaveInfoPanel;
 import ui.components.common.PixelBackgroundPanel;
 import ui.components.common.PixelButton;
 import ui.components.common.UIConstants;
-import service.SessionService;
-import service.SessionServiceImpl;
 
 /**
  * ZOOM Defense 게임 룸 화면 구현 클래스
@@ -429,8 +429,25 @@ public class GameRoomFrame extends JFrame {
             gameMapPanel.setMoney(gameSession.getMoney());
             waveInfoPanel.updateWaveNumber(gameSession.getWave());
             
-            // 타워 배치 정보 로드
-            gameMapPanel.loadTowerPlacements(gameSession.getSessionId());
+            int sessionId = gameSession.getSessionId();
+            // 타워 배치 정보 로드 및 화면에 표시
+            System.out.println("타워 배치 정보 로드 시작: 세션 ID = " + sessionId);
+            
+            // 직접 DAO를 사용하여 타워 배치 정보 로드
+            TowerDAO towerDAO = new TowerDAO();
+            List<TowerPlacement> placements = towerDAO.getTowerPlacementsBySessionId(sessionId);
+            
+            if (placements != null && !placements.isEmpty()) {
+                System.out.println("로드된 타워 배치 목록: " + placements.size() + "개");
+                
+                // GameMapPanel에 타워 배치 정보 전달
+                gameMapPanel.loadTowerPlacements(sessionId);
+                
+                // 화면 갱신 강제
+                gameMapPanel.repaint();
+            } else {
+                System.out.println("세션 ID " + sessionId + "에 대한 타워 배치 정보가 없음");
+            }
             
             System.out.println("게임 상태 로드 완료: 생명력=" + gameSession.getLife() + 
                               ", 자금=" + gameSession.getMoney() + 

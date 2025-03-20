@@ -346,50 +346,40 @@ public class TowerSelectionPanel extends JPanel {
      */
     public void upgradeSelectedTower() {
         if (gameMapPanel == null) {
-            System.out.println("게임 맵 패널이 설정되지 않았습니다.");
+            System.out.println("GameMapPanel이 설정되지 않았습니다.");
             return;
         }
         
-        // 선택된 셀 가져오기
+        // 현재 선택된 셀 정보 가져오기
         Point selectedCell = gameMapPanel.getSelectedCell();
+        
         if (selectedCell == null) {
-            JOptionPane.showMessageDialog(this, "먼저 맵에서 업그레이드할 타워를 선택해주세요.", 
-                                         "알림", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "먼저 업그레이드할 타워를 선택해주세요.", 
+                                         "업그레이드 실패", JOptionPane.WARNING_MESSAGE);
             return;
         }
         
-        // 셀 위치
-        int row = (int) selectedCell.getY();
-        int col = (int) selectedCell.getX();
+        int row = selectedCell.y;
+        int col = selectedCell.x;
         
-        // 업그레이드 비용 (임시로 설정, 실제로는 타워 레벨에 따라 다름)
-        int upgradeCost = 50;
-        
-        // 현재 돈
-        int currentMoney = gameMapPanel.getMoney();
-        
-        // 돈이 충분한지 확인
-        if (currentMoney < upgradeCost) {
-            JOptionPane.showMessageDialog(this, "업그레이드 할 돈이 부족합니다. 필요: " + upgradeCost + 
-                                         ", 보유: " + currentMoney, 
-                                         "자금 부족", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // 타워 업그레이드 시도
+        // GameMapPanel을 통해 타워 업그레이드 시도
+        System.out.println("타워 업그레이드 시도: " + col + ", " + row);
         boolean success = gameMapPanel.upgradeTower(row, col);
         
         if (success) {
-            // 업그레이드 성공
-            JOptionPane.showMessageDialog(this, "타워가 랜덤으로 업그레이드되었습니다.", 
+            System.out.println("타워 업그레이드 성공!");
+            // 업그레이드 성공 메시지 표시
+            JOptionPane.showMessageDialog(this, "타워 업그레이드에 성공했습니다!", 
                                          "업그레이드 성공", JOptionPane.INFORMATION_MESSAGE);
-            // 선택 초기화
+            
+            // 업그레이드 성공 애니메이션 또는 효과 추가
+            gameMapPanel.showTowerPlacementEffect(col, row);
+            
+            // 선택 해제
             gameMapPanel.clearSelection();
-            // 잔액 업데이트
-            updateAvailableMoney(gameMapPanel.getMoney());
         } else {
-            JOptionPane.showMessageDialog(this, "타워 업그레이드에 실패했습니다. 최대 레벨이거나 업그레이드할 타워가 없습니다.", 
-                                         "업그레이드 실패", JOptionPane.WARNING_MESSAGE);
+            System.out.println("타워 업그레이드 실패");
+            // 실패 메시지는 GameMapPanel의 upgradeTower 메서드 내에서 표시됨
         }
     }
     

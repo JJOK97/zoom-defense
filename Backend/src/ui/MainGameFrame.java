@@ -232,22 +232,10 @@ public class MainGameFrame extends JFrame {
 						JOptionPane.showMessageDialog(MainGameFrame.this, loggedInUser.getNickname() + "님 환영합니다!",
 								"로그인 성공", JOptionPane.INFORMATION_MESSAGE);
 
-						// 세션 생성
-						SessionController sessionController = new SessionController();
-						int sessionId = sessionController.createSession(loggedInUser.getUserId());
-
-						if (sessionId > 0) {
-							System.out.println("세션 생성 성공: " + sessionId);
-
-							// 게임 선택 화면으로 바로 이동
-							GameSelectionFrame gameSelection = new GameSelectionFrame(loggedInUser);
-							gameSelection.setVisible(true);
-							dispose(); // 현재 창 닫기
-						} else {
-							// 세션 생성 실패 시에만 알림
-							JOptionPane.showMessageDialog(MainGameFrame.this, "게임 세션 생성에 실패했습니다. 다시 시도해주세요.",
-									"세션 생성 실패", JOptionPane.ERROR_MESSAGE);
-						}
+						// 게임 선택 화면으로 바로 이동 (세션은 새 게임 생성 시에만 만듭니다)
+						GameSelectionFrame gameSelection = new GameSelectionFrame(loggedInUser);
+						gameSelection.setVisible(true);
+						dispose(); // 현재 창 닫기
 					} else {
 						// 로그인 실패
 						JOptionPane.showMessageDialog(MainGameFrame.this, "사용자 ID 또는 비밀번호가 잘못되었습니다.", "로그인 실패",
