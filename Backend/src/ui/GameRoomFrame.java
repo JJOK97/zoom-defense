@@ -141,8 +141,8 @@ public class GameRoomFrame extends JFrame {
             gameMapPanel.setLife(gameSession.getLife());
         }
         
-        // 게임 타이머 시작
-        startGameTimer();
+        // 게임 업데이트 타이머 설정
+        setupGameTimer();
         
         // 창 크기 변경 시 컴포넌트 크기 조정
         addComponentListener(new ComponentAdapter() {
@@ -232,17 +232,35 @@ public class GameRoomFrame extends JFrame {
         topPanel.add(infoPanel, BorderLayout.CENTER);
         topPanel.add(controlPanel, BorderLayout.EAST);
         
-        // 중앙 패널 - 게임 맵
+        // 중앙 패널 - 게임 맵을 담을 패널
+        JPanel centerPanel = new JPanel();
+        centerPanel.setOpaque(false);
+        centerPanel.setLayout(new GridBagLayout());
+        
+        // 게임 맵 생성 및 설정
         gameMapPanel = new GameMapPanel();
         gameMapPanel.setBackground(new Color(50, 50, 50));
         gameMapPanel.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 2));
+        
+        // 게임 맵 크기 조정
+        gameMapPanel.adjustSize();
+        
+        // 게임 맵을 중앙 패널에 추가 (가운데 정렬)
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 1.0;
+        gbc.weighty = 1.0;
+        gbc.anchor = GridBagConstraints.CENTER;
+        gbc.fill = GridBagConstraints.NONE;
+        centerPanel.add(gameMapPanel, gbc);
         
         // GameMapPanel과 WaveInfoPanel 연결
         gameMapPanel.setWaveInfoPanel(waveInfoPanel);
         
         // 메인 패널에 배치
         panel.add(topPanel, BorderLayout.NORTH);
-        panel.add(gameMapPanel, BorderLayout.CENTER);
+        panel.add(centerPanel, BorderLayout.CENTER);
         
         return panel;
     }
@@ -254,11 +272,7 @@ public class GameRoomFrame extends JFrame {
         int width = getWidth();
         int height = getHeight();
         
-        // 게임 맵 크기 조정
-        if (gameMapPanel != null) {
-            // 게임 맵이 전체 화면의 중앙을 차지하도록 설정
-            gameMapPanel.adjustSize(width, height);
-        }
+        // 게임맵 크기는 이미 고정되어 있으므로 추가 조정 불필요
         
         // 자원 및 웨이브 정보 패널 크기 조정
         if (resourcePanel != null && waveInfoPanel != null) {
@@ -365,67 +379,23 @@ public class GameRoomFrame extends JFrame {
     }
     
     /**
-     * 게임 타이머 시작
-     * - 게임 루프, 자원 관리, 적 이동 등을 관리
+     * 게임 업데이트 타이머 설정
      */
-    private void startGameTimer() {
-        gameTimer = new Timer(50, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                // 게임 상태 업데이트
-                updateGameState();
+    private void setupGameTimer() {
+        // 60 FPS (약 16.67ms 간격)
+        int delay = 1000 / 60; 
+        
+        gameTimer = new Timer(delay, e -> {
+            // 게임 맵 업데이트
+            if (gameMapPanel != null) {
+                gameMapPanel.update();
             }
-        });
-        gameTimer.start();
-    }
-    
-    /**
-     * 게임 상태 업데이트
-     */
-    private void updateGameState() {
-        // 업데이트 수행
-        if (gameMapPanel != null) {
-            gameMapPanel.updateGameState();
             
-            // 게임맵으로부터 생명력과 자금 데이터 가져오기
-            gameSession.setLife(gameMapPanel.getLife());
-            gameSession.setMoney(gameMapPanel.getMoney());
-        }
+            // 게임 정보 업데이트 (필요한 경우)
+            // ...
+        });
         
-        // 자원 정보 업데이트
-        if (resourcePanel != null) {
-            resourcePanel.updateResources(gameSession.getLife(), gameSession.getMoney());
-        }
-        
-        // 웨이브 정보 업데이트
-        if (waveInfoPanel != null) {
-            waveInfoPanel.updateWaveInfo(gameSession.getWave());
-        }
-        
-        // 게임 종료 조건 체크
-        if (gameSession.getLife() <= 0) {
-            gameOver();
-        }
-    }
-    
-    /**
-     * 게임 종료 처리
-     */
-    private void gameOver() {
-        if (gameTimer != null) {
-            gameTimer.stop();
-        }
-        
-        JOptionPane.showMessageDialog(this, "게임 오버! 최종 웨이브: " + gameSession.getWave() + ", 점수: " + gameSession.getScore(), 
-                "게임 종료", JOptionPane.INFORMATION_MESSAGE);
-        
-        // 현재 창의 상태 저장
-        boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
-        Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
-        
-        // 게임 결과 화면으로 이동 또는 메인 메뉴로 돌아가기
-        dispose();
-        GameSelectionFrame selectionFrame = new GameSelectionFrame(loggedInUser, currentBounds, currentMaximized);
-        selectionFrame.setVisible(true);
+        // 타이머 시작
+        gameTimer.start();
     }
 } 
