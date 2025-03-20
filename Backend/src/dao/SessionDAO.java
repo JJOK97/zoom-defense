@@ -4,6 +4,10 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
 
 import config.DBConnection;
 import model.Session;
@@ -32,6 +36,7 @@ public class SessionDAO {
             System.out.println("자원 해제 중 오류: " + e.getMessage());
         }
     }
+
 
     /**
      * 새로운 게임 세션 생성
@@ -79,7 +84,7 @@ public class SessionDAO {
     }
     
     
-
+    // 현 게임 상태 저장
 	public boolean updateSession(Session session) {
 		String sql = "UPDATE GAME_SESSIONS SET MONEY = ?, LIFE = ?, SCORE = ?, WAVE = ? WHERE SESSION_ID = ?";
 
@@ -110,4 +115,73 @@ public class SessionDAO {
         
         return success;
 	}
+	
+	
+	// 해당 유저의 플레이 세션 불러오기
+	public List<Session> getUserSessions(int userId) {
+	    List<Session> sessions = new ArrayList<>();
+	    String sql = "SELECT * FROM GAME_SESSIONS WHERE USER_ID = ? ORDER BY LOAD_TIME DESC";
+
+	    try (Connection conn = getConnection();
+	         PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+	        pstmt.setInt(1, userId);
+	        ResultSet rs = pstmt.executeQuery();
+
+	        while (rs.next()) {
+	            Session session = new Session();
+	            session.setSessionId(rs.getInt("SESSION_ID"));
+	            session.setUserId(rs.getInt("USER_ID"));
+	            session.setMoney(rs.getInt("MONEY"));
+	            session.setLife(rs.getInt("LIFE"));
+	            session.setScore(rs.getInt("SCORE"));
+	            session.setWave(rs.getInt("WAVE"));
+	            session.setLoadTime(rs.getTimestamp("LOAD_TIME"));
+	            sessions.add(session);
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    return sessions;
+	}
+
+	
+	// 저장된 게임 정보 로드
+	public Session loadUserSessions(int sessionId) {
+		
+		String sql = "Select * from GAME_SESSIONS where session_id = ?";
+		
+		
+		try {
+			Connection conn = getConnection();
+			PreparedStatement pstmt = conn.prepareStatement(sql);
+			
+			pstmt.setInt(1, sessionId);
+			
+			ResultSet rs = pstmt.executeQuery();
+			
+			if (rs.next()) { 
+	            Session session = new Session();
+	            session.setSessionId(rs.getInt("session_id"));
+	            session.setUserId(rs.getInt("user_id"));
+	            session.setMoney(rs.getInt("money"));
+	            session.setLife(rs.getInt("life"));
+	            session.setWave(rs.getInt("wave"));
+	            session.setScore(rs.getInt("score"));
+	            session.setLoadTime(rs.getTimestamp("load_time"));
+	            
+	            return session;
+	        }
+			
+		} catch (SQLException e) {
+			
+			e.printStackTrace();
+		}
+		
+		return null;
+		
+	}
+
+	
+	
 }

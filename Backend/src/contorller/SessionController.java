@@ -2,6 +2,9 @@ package contorller;
 
 import service.SessionService;
 import service.SessionServiceImpl;
+
+import java.util.List;
+
 import model.Session;
 
 public class SessionController {
@@ -47,4 +50,17 @@ public class SessionController {
         // Service 계층을 통해 게임 상태 저장
         return sessionService.saveGameState(session);
     }
+
+    public List<Session> getUserSessions(int userId) {
+        return sessionService.getUserSessions(userId);
+    }
+
+    
+    public Session loadGameState(int sessionId) {
+    	
+    	Session session = sessionService.loadGameState(sessionId);
+    	
+    	return session ;
+    }
+    
 }
