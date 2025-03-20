@@ -4,6 +4,7 @@ import java.util.List;
 
 import dao.SessionDAO;
 import model.Session;
+import model.TowerPlacement;
 
 public class SessionServiceImpl implements SessionService {
     
@@ -45,6 +46,21 @@ public class SessionServiceImpl implements SessionService {
 	public Session loadGameState(int sessionId) {
 		
 		return sessionDAO.loadUserSessions(sessionId);
+	}
+
+	@Override
+	public boolean saveTowerPlacement(int sessionId, TowerPlacement towerPlacement) {
+		Session session = sessionDAO.loadUserSessions(sessionId);
+		if (session != null) {
+			session.addTower(towerPlacement);
+			return sessionDAO.updateSession(session);
+		}
+		return false;
+	}
+
+	@Override
+	public List<TowerPlacement> loadTowerPlacements(int sessionId) {
+		return sessionDAO.loadTowerPlacements(sessionId);
 	}
 
 }

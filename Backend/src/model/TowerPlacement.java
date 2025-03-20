@@ -16,12 +16,27 @@ public class TowerPlacement {
 	}
 
 	// 타워 설치
-	public TowerPlacement(int placementid, int sessionid, int positionx, int positiony) {
+	public TowerPlacement(int towerId, int sessionId, int positionX, int positionY) {
 		super();
-		this.placementId = placementid;
-		this.sessionId = sessionid;
-		this.positionX = positionx;
-		this.positionY = positiony;
+		this.towerId = towerId;
+		this.sessionId = sessionId;
+		this.positionX = positionX;
+		this.positionY = positionY;
+	}
+
+	// 모든 필드를 포함하는 생성자 추가
+	public TowerPlacement(int placementId, int sessionId, int towerId, int positionX, int positionY) {
+		super();
+		this.placementId = placementId;
+		this.sessionId = sessionId;
+		this.towerId = towerId;
+		this.positionX = positionX;
+		this.positionY = positionY;
+	}
+
+	// 기본 생성자 추가
+	public TowerPlacement() {
+		super();
 	}
 
 	// getter setter 메소드

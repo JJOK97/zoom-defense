@@ -1,6 +1,8 @@
 package model;
 
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Session {
 
@@ -11,6 +13,7 @@ public class Session {
 	private Timestamp loadTime;
 	private int score;
 	private int wave;
+	private List<TowerPlacement> placedTowers;
 	
 	
 	
@@ -67,6 +70,7 @@ public class Session {
 		this.loadTime = loadTime;
 		this.score = score;
 		this.wave = wave;
+		this.placedTowers = new ArrayList<>();
 	}
 	
 	public Session(int userId) {
@@ -75,10 +79,26 @@ public class Session {
 		this.money = 100; // 기본값
 		this.score = 0;   // 기본값
 		this.wave = 1;    // 기본값
+		this.placedTowers = new ArrayList<>();
 	}
 	
 	public Session() {
 		
+	}
+	
+	public List<TowerPlacement> getPlacedTowers() {
+		return placedTowers;
+	}
+	
+	public void setPlacedTowers(List<TowerPlacement> placedTowers) {
+		this.placedTowers = placedTowers;
+	}
+	
+	public void addTower(TowerPlacement tower) {
+		if (this.placedTowers == null) {
+			this.placedTowers = new ArrayList<>();
+		}
+		this.placedTowers.add(tower);
 	}
 	
 	

@@ -3,6 +3,7 @@ package service;
 import java.util.List;
 
 import model.Session;
+import model.TowerPlacement;
 
 public interface SessionService {
 
@@ -25,5 +26,20 @@ public interface SessionService {
 
 
 	Session loadGameState(int sessionId);
+
+	/**
+	 * 타워 배치 정보 저장
+	 * @param sessionId 세션 ID
+	 * @param towerPlacement 타워 배치 정보
+	 * @return 저장 성공 여부
+	 */
+	boolean saveTowerPlacement(int sessionId, TowerPlacement towerPlacement);
+
+	/**
+	 * 세션의 타워 배치 정보 로드
+	 * @param sessionId 세션 ID
+	 * @return 타워 배치 목록
+	 */
+	List<TowerPlacement> loadTowerPlacements(int sessionId);
 
 }
