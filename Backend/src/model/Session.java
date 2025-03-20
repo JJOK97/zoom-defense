@@ -68,6 +68,15 @@ public class Session {
 		this.score = score;
 		this.wave = wave;
 	}
+	
+	public Session(int userId) {
+		this.userId = userId;
+		this.life = 100;  // 기본값
+		this.money = 100; // 기본값
+		this.score = 0;   // 기본값
+		this.wave = 1;    // 기본값
+	}
+	
 	public Session() {
 		
 	}

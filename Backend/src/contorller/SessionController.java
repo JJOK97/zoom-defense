@@ -16,23 +16,32 @@ public class SessionController {
         this.sessionService = new SessionServiceImpl();
     }
     
-    
-    public int createSession(int userId, int money, int life) {
-        // 클라이언트로부터 받은 정보를 바탕으로 Session 객체 생성
+    /**
+     * 새 게임 시작 시 세션 생성
+     * @param userId 사용자 ID
+     * @return 생성된 세션 ID
+     */
+    public int createSession(int userId) {
+        // 클라이언트로부터 받은 userId로 세션 객체 생성
         Session session = new Session();
         session.setUserId(userId);
-        session.setMoney(100);
-        session.setLife(100);
         
         // Service 계층을 통해 세션 생성 처리 후, 생성된 SESSION_ID 반환
-        int sessionId = sessionService.createSession(session);
-        return sessionId;
+        return sessionService.createSession(session);
     }
     
-    
+    /**
+     * 현재 게임 상태 저장
+     * @param sessionId 세션 ID
+     * @param currentMoney 현재 보유 자금
+     * @param currentLife 현재 생명력
+     * @param currentWave 현재 웨이브
+     * @param score 현재 점수
+     * @return 저장 성공 여부
+     */
     public boolean saveGameState(int sessionId, int currentMoney, int currentLife, int currentWave, int score) {
         Session session = new Session();
-        session.setSessionId(sessionId);  // SessionId 설정 (중요!)
+        session.setSessionId(sessionId);
         session.setMoney(currentMoney);
         session.setLife(currentLife);
         session.setWave(currentWave);
@@ -41,9 +50,7 @@ public class SessionController {
         // Service 계층을 통해 게임 상태 저장
         return sessionService.saveGameState(session);
     }
-    
-    	
-  
+
     public List<Session> getUserSessions(int userId) {
         return sessionService.getUserSessions(userId);
     }
@@ -56,5 +63,4 @@ public class SessionController {
     	return session ;
     }
     
-
 }

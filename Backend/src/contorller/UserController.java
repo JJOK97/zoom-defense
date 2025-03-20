@@ -38,23 +38,21 @@ public class UserController {
     
     /**
      * 로그인 인증 메소드
-     * @param loginId 체크할 아이디
+     * @param userLoginId 체크할 아이디
      * @param password 체크할 비밀번호
-     * @return 로그인 성공 여부 (true: 성공, false: 실패)
+     * @return 인증된 사용자 정보, 실패 시 null
      */
-    public boolean validateLogin(String loginId, String password) {
-    	User user = new User(loginId, password);
-    	return userService.validate(loginId, password);
+    public User validateLogin(String userLoginId, String password) {
+        return userService.validate(userLoginId, password);
     }
     
     /**
-     * 사용자 정보 조회
-     * @param getUserById 체크할 아이디
-     * @return 정보 조회 성공 여부 (true: 성공, false: 실패)
+     * 사용자 ID로 사용자 정보 조회
+     * @param userId 사용자 ID
+     * @return 사용자 정보, 없으면 null
      */
-    public boolean getUserById(int userId, String loginId, String nickname) {
-    	User user = new User(userId,loginId,nickname);
-    	return userService.getUserById(userId, loginId, nickname);
+    public User getUserById(int userId) {
+        return userService.getUserById(userId);
     }
     
 } 

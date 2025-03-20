@@ -91,71 +91,72 @@ public class UserDAO {
     
     /**
      * 로그인 인증 메소드
-     * @param loginId 체크할 아이디
+     * @param userLoginId 체크할 아이디
      * @param password 체크할 비밀번호
-     * @return 로그인 성공 여부 (true: 성공, false: 실패)
+     * @return 인증된 사용자 정보, 실패 시 null
      */
-    public boolean validateLogin(String loginId, String password) {
-    	boolean validate = false;
-    	String sql = "SELECT * FROM USERS WHERE USER_LOGIN_ID = ? AND PASSWORD = ?";
-    	
-    	try {
-    		conn = getConnection();
-    		pstmt = conn.prepareStatement(sql);
-    		pstmt.setString(1, loginId);
-    		pstmt.setString(2, password);
-    		
-    		rs = pstmt.executeQuery();
-    		
-    		if(rs.next()) {
-    			validate = true;
-    		} else {
-    			System.out.println("다시 시도해주세요");
-    		}
-    		
-		} catch (SQLException e) {
-			e.printStackTrace();
-		} finally {
-			close();
-		}
-    	return validate;
+    public User validateLogin(String userLoginId, String password) {
+        User user = null;
+        String sql = "SELECT USER_ID, USER_LOGIN_ID, NICKNAME FROM USERS WHERE USER_LOGIN_ID = ? AND PASSWORD = ?";
+        
+        try {
+            conn = getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, userLoginId);
+            pstmt.setString(2, password);
+            
+            rs = pstmt.executeQuery();
+            
+            if(rs.next()) {
+                int userId = rs.getInt("USER_ID");
+                String loginId = rs.getString("USER_LOGIN_ID");
+                String nickname = rs.getString("NICKNAME");
+                
+                user = new User(userId, loginId, nickname);
+                System.out.println("로그인 성공: " + nickname + "님 환영합니다.");
+            } else {
+                System.out.println("로그인 실패: 다시 시도해주세요");
+            }
+            
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return user;
     }
     
     /**
-     * 사용자 정보 조회
-     * @param getUserById 체크할 아이디
-     * @return 정보 조회 성공 여부 (true: 성공, false: 실패)
+     * 사용자 ID로 사용자 정보 조회
+     * @param userId 사용자 ID
+     * @return 조회된 사용자 정보
      */
-    public boolean getUserById(int userId, String loginId, String nickname) {
-    	boolean UserBy = false;
-    	String sql = "SELECT USER_ID,USER_LOGIN_ID,NICKNAME FROM USERS";
-    	
-		try {
-			conn = getConnection();
-			pstmt = conn.prepareStatement(sql);
-			
-			rs = pstmt.executeQuery();
-			
-			if(rs.next()) {
-			System.out.println("=====사용자 목록=====");
-			System.out.println("UserID\tLoginID\t\tNickname");
-			do {
-				int userIdResult = rs.getInt("USER_ID");
-				String loginIdResult = rs.getString("USER_LOGIN_ID");
-		        String nicknameResult = rs.getString("NICKNAME");
-		        
-		        System.out.println(userIdResult + "\t" + loginIdResult + "\t" + nicknameResult);
-				} while(rs.next());
-				UserBy = true;
-			} else {
-				System.out.println("사용자 목록 출력을 실패했습니다. 다시 시도해 주세요!");
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}finally {
-			close();
-		}
-    	return UserBy;
+    public User getUserById(int userId) {
+        User user = null;
+        String sql = "SELECT USER_ID, USER_LOGIN_ID, NICKNAME FROM USERS WHERE USER_ID = ?";
+        
+        try {
+            conn = getConnection();
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, userId);
+            
+            rs = pstmt.executeQuery();
+            
+            if(rs.next()) {
+                int userIdResult = rs.getInt("USER_ID");
+                String loginIdResult = rs.getString("USER_LOGIN_ID");
+                String nicknameResult = rs.getString("NICKNAME");
+                
+                user = new User(userIdResult, loginIdResult, nicknameResult);
+                System.out.println("사용자 정보 조회 성공: " + nicknameResult);
+            } else {
+                System.out.println("사용자 정보를 찾을 수 없습니다.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        } finally {
+            close();
+        }
+        return user;
     }
-    
 } 
