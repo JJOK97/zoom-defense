@@ -1,5 +1,7 @@
 package service;
 
+import java.util.List;
+
 import model.Session;
 
 public interface SessionService {
@@ -9,4 +11,11 @@ public interface SessionService {
 	
 	
 	boolean saveGameState(Session session);
+	
+	
+	List<Session> getUserSessions(int userId);
+
+
+	Session loadGameState(int sessionId);
+
 }

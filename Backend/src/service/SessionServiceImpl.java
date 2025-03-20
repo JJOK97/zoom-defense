@@ -1,5 +1,7 @@
 package service;
 
+import java.util.List;
+
 import dao.SessionDAO;
 import model.Session;
 
@@ -24,4 +26,18 @@ public class SessionServiceImpl implements SessionService {
 		
 		return sessionDAO.updateSession(session);
 	}
+	
+	@Override
+	public List<Session> getUserSessions(int userId) {
+	    return sessionDAO.getUserSessions(userId);
+	}
+
+
+	@Override
+	public Session loadGameState(int sessionId) {
+		
+		return sessionDAO.loadUserSessions(sessionId);
+	}
+
+	
 }

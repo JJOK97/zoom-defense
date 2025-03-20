@@ -2,6 +2,9 @@ package contorller;
 
 import service.SessionService;
 import service.SessionServiceImpl;
+
+import java.util.List;
+
 import model.Session;
 
 public class SessionController {
@@ -41,6 +44,17 @@ public class SessionController {
     
     	
   
+    public List<Session> getUserSessions(int userId) {
+        return sessionService.getUserSessions(userId);
+    }
+
+    
+    public Session loadGameState(int sessionId) {
+    	
+    	Session session = sessionService.loadGameState(sessionId);
+    	
+    	return session ;
+    }
     
 
 }
