@@ -10,187 +10,320 @@ import java.util.Random;
 
 import config.DBConnection;
 import model.Tower;
+import model.TowerPlacement;
 
 public class TowerDAO {
 	private Connection conn;
 	private PreparedStatement pstmt;
 	private ResultSet rs;
-	
+
 	// DB연결 가져오기
 	private Connection getConnection() {
 		return DBConnection.getInstance().getConnection();
 	}
-	
+
 	// 자원 해제 메소드
 	private void close() {
-        try {
-            if (rs != null) rs.close();
-            if (pstmt != null) pstmt.close();
-            // Connection은 싱글톤으로 관리하므로 여기서 닫지 않음
-        } catch (SQLException e) {
-            System.out.println("자원 해제 중 오류: " + e.getMessage());
-        }
-    }
-	
-	/**
-     * 1단계 타워 목록 조회
-     * @param 타워 레벨별 정보 목록 조회	
-	 * @return 랜덤으로 선택된 타워 이름
-     */
-	public Tower getFirstTower() {
-	    Tower tower = null;
-	    List<Tower> towerList = new ArrayList<>();
-	    
-	    // SQL 쿼리: 레벨 1 타워 목록 가져오기
-	    String sql = "SELECT * FROM TOWERS WHERE TOWER_LEVEL = 1";
-	    
-	    try {
-	        conn = getConnection();
-	        pstmt = conn.prepareStatement(sql);
-	        rs = pstmt.executeQuery();
-	        
-	        // 데이터베이스에서 타워 정보를 리스트에 추가
-	        while (rs.next()) {
-	            int towerId = rs.getInt("TOWER_ID");
-	            String towerName = rs.getString("TOWER_NAME");
-	            int towerLevel = rs.getInt("TOWER_LEVEL");
-	            int damage = rs.getInt("DAMAGE");
-	            int range = rs.getInt("RANGE");
-	            int attackSpeed = rs.getInt("ATTACK_SPEED");
-	            int cost = rs.getInt("COST");
-	            int upgradeCost = rs.getInt("UPGRADE_COST");
-	            
-	            // 타워 객체 생성 후 리스트에 추가
-	            Tower t = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
-	            towerList.add(t);
-	        }
-	        
-	        // 타워 리스트가 비어 있지 않으면 랜덤으로 하나 선택
-	        if (!towerList.isEmpty()) {
-	            Random random = new Random();
-	            int randomIndex = random.nextInt(towerList.size());  // 랜덤 인덱스 생성
-	            System.out.println(towerList.size());
-	            System.out.println(randomIndex);
-	            tower = towerList.get(randomIndex);  				// 랜덤 인덱스를 통해 타워 선택
-	            System.out.println("랜덤으로 선택된 타워: " + tower.getTowerId());
-	        } else {
-	            System.out.println("레벨 1 타워가 없습니다.");
-	        }
-	        
-	    } catch (SQLException e) {
-	        System.out.println("1레벨 타워 생성 실패");
-	        e.printStackTrace();
-	    } finally {
-	        close();
-	    }
-	    
-	    return tower;  // 랜덤으로 선택된 타워 객체 반환
+		try {
+			if (rs != null)
+				rs.close();
+			if (pstmt != null)
+				pstmt.close();
+			// Connection은 싱글톤으로 관리하므로 여기서 닫지 않음
+		} catch (SQLException e) {
+			System.out.println("자원 해제 중 오류: " + e.getMessage());
+		}
 	}
 
-	
-	
 	/**
-     * 2단계 타워 목록 조회
-     * @param 타워 레벨별 정보 목록 조회	
+	 * 1단계 타워 목록 조회
+	 * 
+	 * @param 타워 레벨별 정보 목록 조회
 	 * @return 랜덤으로 선택된 타워 이름
-     */
-	
-	public Tower getSecondTower() {
-	    Tower tower = null;
-	    List<Tower> towerList = new ArrayList<>();
-	    
-	    // SQL 쿼리: 레벨 2 타워 목록 가져오기
-	    String sql = "SELECT * FROM TOWERS WHERE TOWER_LEVEL = 2";
-	    
-	    try {
-	    	conn = getConnection();
+	 */
+	public Tower getFirstTower() {
+		Tower tower = null;
+		List<Tower> towerList = new ArrayList<>();
+
+		// SQL 쿼리: 레벨 1 타워 목록 가져오기
+		String sql = "SELECT * FROM TOWERS WHERE TOWER_LEVEL = 1";
+
+		try {
+			conn = getConnection();
 			pstmt = conn.prepareStatement(sql);
 			rs = pstmt.executeQuery();
-			
-		while (rs.next()) {
-			int towerId = rs.getInt("TOWER_ID");
-		    String towerName = rs.getString("TOWER_NAME");
-		    int towerLevel = rs.getInt("TOWER_LEVEL");
-		    int damage = rs.getInt("DAMAGE");
-		    int range = rs.getInt("RANGE");
-		    int attackSpeed = rs.getInt("ATTACK_SPEED");
-		    int cost = rs.getInt("COST");
-		    int upgradeCost = rs.getInt("UPGRADE_COST");	
-			
-		    Tower t = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
-            towerList.add(t);
-        }
-		
-        if (!towerList.isEmpty()) {
-            Random random = new Random();
-            int randomIndex = random.nextInt(towerList.size());
-            System.out.println(towerList.size());
-            System.out.println(randomIndex);
-            tower = towerList.get(randomIndex);
-            System.out.println("랜덤으로 선택된 타워: " + tower.getTowerLevel());
-        } else {
-            System.out.println("레벨 2 타워가 없습니다.");
-        }
-			
+
+			// 데이터베이스에서 타워 정보를 리스트에 추가
+			while (rs.next()) {
+				int towerId = rs.getInt("TOWER_ID");
+				String towerName = rs.getString("TOWER_NAME");
+				int towerLevel = rs.getInt("TOWER_LEVEL");
+				int damage = rs.getInt("DAMAGE");
+				int range = rs.getInt("RANGE");
+				int attackSpeed = rs.getInt("ATTACK_SPEED");
+				int cost = rs.getInt("COST");
+				int upgradeCost = rs.getInt("UPGRADE_COST");
+
+				// 타워 객체 생성 후 리스트에 추가
+				Tower t = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
+				towerList.add(t);
+			}
+
+			// 타워 리스트가 비어 있지 않으면 랜덤으로 하나 선택
+			if (!towerList.isEmpty()) {
+				Random random = new Random();
+				int randomIndex = random.nextInt(towerList.size()); // 랜덤 인덱스 생성
+				System.out.println(towerList.size());
+				System.out.println(randomIndex);
+				tower = towerList.get(randomIndex); // 랜덤 인덱스를 통해 타워 선택
+				System.out.println("랜덤으로 선택된 타워: " + tower.getTowerId());
+			} else {
+				System.out.println("레벨 1 타워가 없습니다.");
+			}
+
+		} catch (SQLException e) {
+			System.out.println("1레벨 타워 생성 실패");
+			e.printStackTrace();
+		} finally {
+			close();
+		}
+
+		return tower; // 랜덤으로 선택된 타워 객체 반환
+	}
+
+	/**
+	 * 2단계 타워 목록 조회
+	 * 
+	 * @param 타워 레벨별 정보 목록 조회
+	 * @return 랜덤으로 선택된 타워 이름
+	 */
+
+	public Tower getSecondTower() {
+		Tower tower = null;
+		List<Tower> towerList = new ArrayList<>();
+
+		// SQL 쿼리: 레벨 2 타워 목록 가져오기
+		String sql = "SELECT * FROM TOWERS WHERE TOWER_LEVEL = 2";
+
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(sql);
+			rs = pstmt.executeQuery();
+
+			while (rs.next()) {
+				int towerId = rs.getInt("TOWER_ID");
+				String towerName = rs.getString("TOWER_NAME");
+				int towerLevel = rs.getInt("TOWER_LEVEL");
+				int damage = rs.getInt("DAMAGE");
+				int range = rs.getInt("RANGE");
+				int attackSpeed = rs.getInt("ATTACK_SPEED");
+				int cost = rs.getInt("COST");
+				int upgradeCost = rs.getInt("UPGRADE_COST");
+
+				Tower t = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
+				towerList.add(t);
+			}
+
+			if (!towerList.isEmpty()) {
+				Random random = new Random();
+				int randomIndex = random.nextInt(towerList.size());
+				System.out.println(towerList.size());
+				System.out.println(randomIndex);
+				tower = towerList.get(randomIndex);
+				System.out.println("랜덤으로 선택된 타워: " + tower.getTowerLevel());
+			} else {
+				System.out.println("레벨 2 타워가 없습니다.");
+			}
+
 		} catch (SQLException e) {
 			System.out.println("2레벨 타워 생성 실패");
-	        e.printStackTrace();
-	    } finally {
-	        close();
-	    }
-	    return tower;
+			e.printStackTrace();
+		} finally {
+			close();
+		}
+		return tower;
 	}
-	
-	
+
 	/**
-     * 3단계 타워 목록 조회
-     * @param 타워 레벨별 정보 목록 조회	
+	 * 3단계 타워 목록 조회
+	 * 
+	 * @param 타워 레벨별 정보 목록 조회
 	 * @return 랜덤으로 선택된 타워 이름
-     */
-	
+	 */
+
 	public Tower getThirdTower() {
-	    Tower tower = null;
-	    List<Tower> towerList = new ArrayList<>();
-	    
-	    // SQL 쿼리: 레벨 3 타워 목록 가져오기
-	    String sql = "SELECT * FROM TOWERS WHERE TOWER_LEVEL = 3";
-	    
-	    try {
-	    	conn = getConnection();
+		Tower tower = null;
+		List<Tower> towerList = new ArrayList<>();
+
+		// SQL 쿼리: 레벨 3 타워 목록 가져오기
+		String sql = "SELECT * FROM TOWERS WHERE TOWER_LEVEL = 3";
+
+		try {
+			conn = getConnection();
 			pstmt = conn.prepareStatement(sql);
 			rs = pstmt.executeQuery();
-			
-		while (rs.next()) {
-			int towerId = rs.getInt("TOWER_ID");
-		    String towerName = rs.getString("TOWER_NAME");
-		    int towerLevel = rs.getInt("TOWER_LEVEL");
-		    int damage = rs.getInt("DAMAGE");
-		    int range = rs.getInt("RANGE");
-		    int attackSpeed = rs.getInt("ATTACK_SPEED");
-		    int cost = rs.getInt("COST");
-		    int upgradeCost = rs.getInt("UPGRADE_COST");	
-			
-		    Tower t = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
-            towerList.add(t);
-        }
-		
-        if (!towerList.isEmpty()) {
-            Random random = new Random();
-            int randomIndex = random.nextInt(towerList.size());
-            System.out.println(towerList.size());
-            System.out.println(randomIndex);
-            tower = towerList.get(randomIndex);
-            System.out.println("랜덤으로 선택된 타워: " + tower.getTowerLevel());
-        } else {
-            System.out.println("레벨 3 타워가 없습니다.");
-        }
-			
+
+			while (rs.next()) {
+				int towerId = rs.getInt("TOWER_ID");
+				String towerName = rs.getString("TOWER_NAME");
+				int towerLevel = rs.getInt("TOWER_LEVEL");
+				int damage = rs.getInt("DAMAGE");
+				int range = rs.getInt("RANGE");
+				int attackSpeed = rs.getInt("ATTACK_SPEED");
+				int cost = rs.getInt("COST");
+				int upgradeCost = rs.getInt("UPGRADE_COST");
+
+				Tower t = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
+				towerList.add(t);
+			}
+
+			if (!towerList.isEmpty()) {
+				Random random = new Random();
+				int randomIndex = random.nextInt(towerList.size());
+				System.out.println(towerList.size());
+				System.out.println(randomIndex);
+				tower = towerList.get(randomIndex);
+				System.out.println("랜덤으로 선택된 타워: " + tower.getTowerLevel());
+			} else {
+				System.out.println("레벨 3 타워가 없습니다.");
+			}
+
 		} catch (SQLException e) {
 			System.out.println("3레벨 타워 생성 실패");
-	        e.printStackTrace();
-	    } finally {
-	        close();
-	    }
-	    return tower;
+			e.printStackTrace();
+		} finally {
+			close();
+		}
+		return tower;
 	}
+
+	/**
+	 * 게임 맵에 타워 설치
+	 * 
+	 * @param
+	 * @return success 성공 여부
+	 */
+	public boolean placeTower(TowerPlacement tower) {
+		boolean success = false;
+		String sql = "INSERT INTO TOWER_PLACEMENTS (TOWER_ID, SESSION_ID, POSITION_X, POSITION_Y) VALUES(?, ?, ?, ?)";
+
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, tower.getTowerId());
+			pstmt.setInt(2, tower.getSessionId());
+			pstmt.setInt(3, tower.getPositionX());
+			pstmt.setInt(4, tower.getPositionY());
+
+			int result = pstmt.executeUpdate();
+
+			if (result > 0) {
+				success = true;
+				System.out.println("타워 배치 성공");
+			} else {
+				System.out.println("타워 배치 실패");
+			}
+
+		} catch (SQLException e) {
+			System.out.println("타워 배치 실패: " + e.getMessage());
+		} finally {
+			close();
+		}
+		return success;
+
+	}
+
+	/**
+	 * 게임 맵에 타워 업그레이드
+	 * 
+	 * @param
+	 * @return success 성공 여부
+	 */
+	public boolean upgradeTower(int sessionId, int x, int y) {
+		boolean success = false;
+		String sql = "";
+
+		try {
+			conn = getConnection();
+
+			// 현재 타워 ID를 조회
+			int towerId = getTowerId(sessionId, x, y);
+
+			// 타워 ID가 1일 때
+			if (towerId == 1) {
+				Tower second = getSecondTower(); // 두 번째 타워를 가져오기 (타워 2로 업그레이드)
+				int secondId = second.getTowerId();
+
+				sql = "UPDATE TOWER_PLACEMENTS SET TOWER_ID = ? WHERE SESSION_ID = ? AND POSITION_X = ? AND POSITION_Y = ?";
+				pstmt = conn.prepareStatement(sql);
+				pstmt.setInt(1, secondId); // 두 번째 타워의 ID를 설정
+				pstmt.setInt(2, sessionId);
+				pstmt.setInt(3, x);
+				pstmt.setInt(4, y);
+
+			}
+			// 타워 ID가 2일 때
+			else if (towerId == 2) {
+				Tower third = getThirdTower(); // 세 번째 타워를 가져오기 (타워 3으로 업그레이드)
+				int thirdId = third.getTowerId();
+
+				sql = "UPDATE TOWER_PLACEMENTS SET TOWER_ID = ? WHERE SESSION_ID = ? AND POSITION_X = ? AND POSITION_Y = ?";
+				pstmt = conn.prepareStatement(sql);
+				pstmt.setInt(1, thirdId); // 세 번째 타워의 ID를 설정
+				pstmt.setInt(2, sessionId);
+				pstmt.setInt(3, x);
+				pstmt.setInt(4, y);
+
+			}
+			// 타워 ID가 3일 때, 업그레이드가 불가능하므로 실패 처리
+			else if (towerId == 3) {
+				System.out.println("타워는 더 이상 업그레이드할 수 없습니다.");
+				return false; // 타워 3인 경우 업그레이드 불가
+			}
+			// 타워 ID가 1 또는 2가 아닌 경우 (잘못된 타워 ID)
+			else {
+				System.out.println("타워 레벨이 최대치입니다.");
+				return false;
+			}
+
+			// SQL 실행
+			int result = pstmt.executeUpdate();
+
+			if (result > 0) {
+				success = true;
+				System.out.println("타워 업그레이드 성공");
+			} else {
+				System.out.println("타워 업그레이드 실패");
+			}
+
+		} catch (SQLException e) {
+			System.out.println("타워 업그레이드 중 오류 발생: " + e.getMessage());
+		} finally {
+			close();
+		}
+		return success;
+	}
+
+	public int getTowerId(int sessionId, int x, int y) {
+		int success = 0;
+		String sql = "SELECT TOWER_ID FROM TOWER_PLACEMENTS WHERE POSITOON_X = ? AND POSITON_Y = ?";
+
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, x);
+			pstmt.setInt(2, y);
+
+			success = pstmt.executeUpdate();
+
+		} catch (SQLException e) {
+			System.out.println("타워 업그레이드 실패");
+		} finally {
+			close();
+		}
+
+		return success;
+
+	}
+
 }
