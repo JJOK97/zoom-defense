@@ -22,12 +22,12 @@ import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
 import contorller.UserController;
-import ui.common.UIConstants;
-import ui.components.PixelBackgroundPanel;
-import ui.components.PixelButton;
-import ui.components.PixelLabel;
-import ui.components.PixelPasswordField;
-import ui.components.PixelTextField;
+import ui.components.common.UIConstants;
+import ui.components.common.PixelBackgroundPanel;
+import ui.components.common.PixelButton;
+import ui.components.common.PixelLabel;
+import ui.components.common.PixelPasswordField;
+import ui.components.common.PixelTextField;
 
 /**
  * 회원가입 화면을 구현한 UI 클래스 (창 상태 유지 기능 추가)

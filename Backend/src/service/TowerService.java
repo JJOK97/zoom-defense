@@ -31,4 +31,7 @@ public interface TowerService {
 	 * @return 타워 리스트 여부
 	 */
 	Tower getThirdTower();
+
+
+	Tower getTowerById(int id);
 }

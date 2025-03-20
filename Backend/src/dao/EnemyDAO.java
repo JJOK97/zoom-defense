@@ -66,6 +66,7 @@ public class EnemyDAO {
 			if (rs.next()) { 
 	            Enemy enemy = new Enemy();
 	            
+	            enemy.setEnemy_id(enemyId);
 	            enemy.setEnemy_name(rs.getString("enemy_name"));
 	            enemy.setHealth(rs.getInt("health"));
 	            enemy.setDamage(rs.getInt("damage"));

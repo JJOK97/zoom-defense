@@ -48,8 +48,8 @@ public class Enemy {
 	
 	public Enemy(int enemy_id, String enemy_name, int health, int speed, int reward, int damage) {
 		super();
-		this.enemyId = enemyId;
-		this.enemyName = enemyName;
+		this.enemyId = enemy_id;
+		this.enemyName = enemy_name;
 		this.health = health;
 		this.speed = speed;
 		this.reward = reward;
