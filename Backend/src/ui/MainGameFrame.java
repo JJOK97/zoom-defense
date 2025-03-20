@@ -20,12 +20,21 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
+import contorller.UserController;
 import ui.common.UIConstants;
 import ui.components.PixelBackgroundPanel;
 import ui.components.PixelButton;
 import ui.components.PixelLabel;
 import ui.components.PixelPasswordField;
 import ui.components.PixelTextField;
+import service.UserService;
+import service.UserServiceImpl;
+import service.SessionService;
+import service.SessionServiceImpl;
+import dao.UserDAO;
+import dao.SessionDAO;
+import model.User;
+import model.Session;
 
 /**
  * 게임 시작 화면을 구현한 UI 클래스 (창 상태 유지 기능 추가)
@@ -215,40 +224,44 @@ public class MainGameFrame extends JFrame {
         btnLogin.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                String loginId = txtLoginId.getText();
+                String userLoginId = txtLoginId.getText();
                 String password = new String(txtPassword.getPassword());
                 
-                // 입력 검증
-                if (loginId.trim().isEmpty() || password.trim().isEmpty()) {
-                    JOptionPane.showMessageDialog(MainGameFrame.this, 
-                            "아이디와 비밀번호를 입력해주세요.", 
-                            "로그인 오류", 
-                            JOptionPane.WARNING_MESSAGE);
-                    return;
-                }
+                // UserController를 사용하여 로그인 처리
+                UserController userController = new UserController();
                 
-                // 임시 로그인 처리 (실제 컨트롤러 구현 전 하드코딩)
-                boolean loginSuccess = false;
-                
-                // 하드코딩된 계정 정보로 로그인 처리
-                if (loginId.equals("JSO") && password.equals("1234")) {
-                    loginSuccess = true;
-                }
-                
-                if (loginSuccess) {
-                    // 현재 창의 상태 저장
-                    boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
-                    Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+                try {
+                    User loggedInUser = userController.validateLogin(userLoginId, password);
                     
-                    // 게임 선택 화면으로 이동 (창 상태 유지)
-                    dispose();
-                    GameSelectionFrame gameSelectionFrame = new GameSelectionFrame(loginId, currentBounds, currentMaximized);
-                    gameSelectionFrame.setVisible(true);
-                } else {
-                    JOptionPane.showMessageDialog(MainGameFrame.this, 
-                            "아이디 또는 비밀번호가 올바르지 않습니다.", 
+                    if (loggedInUser != null) {
+                        // 로그인 성공
+                        JOptionPane.showMessageDialog(MainGameFrame.this, 
+                            loggedInUser.getNickname() + "님 환영합니다!", 
+                            "로그인 성공", 
+                            JOptionPane.INFORMATION_MESSAGE);
+                        
+                        // 세션 저장
+                        SessionService sessionService = new SessionServiceImpl(new SessionDAO());
+                        Session session = new Session(loggedInUser.getUserId());
+                        sessionService.createSession(session);
+                        
+                        // 게임 선택 화면으로 이동
+                        GameSelectionFrame gameSelection = new GameSelectionFrame(loggedInUser);
+                        gameSelection.setVisible(true);
+                        dispose(); // 현재 창 닫기
+                    } else {
+                        // 로그인 실패
+                        JOptionPane.showMessageDialog(MainGameFrame.this, 
+                            "사용자 ID 또는 비밀번호가 잘못되었습니다.", 
                             "로그인 실패", 
                             JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(MainGameFrame.this, 
+                        "로그인 중 오류가 발생했습니다: " + ex.getMessage(), 
+                        "오류", 
+                        JOptionPane.ERROR_MESSAGE);
+                    ex.printStackTrace();
                 }
             }
         });
