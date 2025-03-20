@@ -148,7 +148,6 @@ public class UserDAO {
                 String nicknameResult = rs.getString("NICKNAME");
                 
                 user = new User(userIdResult, loginIdResult, nicknameResult);
-                System.out.println("사용자 정보 조회 성공: " + nicknameResult);
             } else {
                 System.out.println("사용자 정보를 찾을 수 없습니다.");
             }

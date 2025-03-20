@@ -262,8 +262,14 @@ public class GameSelectionFrame extends JFrame {
 		btnRanking.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JOptionPane.showMessageDialog(GameSelectionFrame.this, "랭킹 기능은 아직 구현되지 않았습니다.", "개발 중",
-						JOptionPane.INFORMATION_MESSAGE);
+				// 현재 창의 상태 저장
+				boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+				Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+				
+				// 랭킹 화면 열기
+				RankingFrame rankingFrame = new RankingFrame(loggedInUser, currentBounds, currentMaximized);
+				rankingFrame.setVisible(true);
+				setVisible(false);
 			}
 		});
 		buttonPanel.add(btnRanking, gbc);
