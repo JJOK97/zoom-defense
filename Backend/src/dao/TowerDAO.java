@@ -200,7 +200,7 @@ public class TowerDAO {
 	/**
 	 * 게임 맵에 타워 설치
 	 * 
-	 * @param
+	 * @param tower 배치할 타워 정보
 	 * @return success 성공 여부
 	 */
 	public boolean placeTower(TowerPlacement tower) {
@@ -210,6 +210,13 @@ public class TowerDAO {
 		try {
 			conn = getConnection();
 			pstmt = conn.prepareStatement(sql);
+			
+			// 디버깅용 출력
+			System.out.println("타워 배치 시도: TowerID=" + tower.getTowerId() + 
+							   ", SessionID=" + tower.getSessionId() + 
+							   ", X=" + tower.getPositionX() + 
+							   ", Y=" + tower.getPositionY());
+			
 			pstmt.setInt(1, tower.getTowerId());
 			pstmt.setInt(2, tower.getSessionId());
 			pstmt.setInt(3, tower.getPositionX());
@@ -219,18 +226,19 @@ public class TowerDAO {
 
 			if (result > 0) {
 				success = true;
-				System.out.println("타워 배치 성공");
+				System.out.println("타워 배치 성공: " + tower.getTowerId() + " at (" + 
+								  tower.getPositionX() + "," + tower.getPositionY() + ")");
 			} else {
-				System.out.println("타워 배치 실패");
+				System.out.println("타워 배치 실패: 영향받은 행이 없음");
 			}
 
 		} catch (SQLException e) {
-			System.out.println("타워 배치 실패: " + e.getMessage());
+			System.out.println("타워 배치 실패 (SQL 오류): " + e.getMessage());
+			e.printStackTrace();
 		} finally {
 			close();
 		}
 		return success;
-
 	}
 
 	/**
@@ -324,6 +332,69 @@ public class TowerDAO {
 
 		return success;
 
+	}
+
+	/**
+	 * 타워 ID로 타워 정보 가져오기
+	 */
+	public Tower getTowerById(int towerId) {
+		Tower tower = null;
+		String sql = "SELECT * FROM TOWERS WHERE TOWER_ID = ?";
+
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, towerId);
+			rs = pstmt.executeQuery();
+
+			if (rs.next()) {
+				String towerName = rs.getString("TOWER_NAME");
+				int towerLevel = rs.getInt("TOWER_LEVEL");
+				int damage = rs.getInt("DAMAGE");
+				int range = rs.getInt("RANGE");
+				int attackSpeed = rs.getInt("ATTACK_SPEED");
+				int cost = rs.getInt("COST");
+				int upgradeCost = rs.getInt("UPGRADE_COST");
+
+				tower = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
+			}
+		} catch (SQLException e) {
+			System.out.println("타워 정보 조회 실패: " + e.getMessage());
+		} finally {
+			close();
+		}
+		return tower;
+	}
+
+	/**
+	 * 세션의 모든 타워 배치 정보 조회
+	 */
+	public List<TowerPlacement> getTowerPlacementsBySessionId(int sessionId) {
+		List<TowerPlacement> placements = new ArrayList<>();
+		String sql = "SELECT * FROM TOWER_PLACEMENTS WHERE SESSION_ID = ?";
+
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(sql);
+			pstmt.setInt(1, sessionId);
+			rs = pstmt.executeQuery();
+
+			while (rs.next()) {
+				int placementId = rs.getInt("PLACEMENT_ID");
+				int towerId = rs.getInt("TOWER_ID");
+				int positionX = rs.getInt("POSITION_X");
+				int positionY = rs.getInt("POSITION_Y");
+
+				TowerPlacement placement = new TowerPlacement(placementId, sessionId, positionX, positionY);
+				placement.setTowerId(towerId);
+				placements.add(placement);
+			}
+		} catch (SQLException e) {
+			System.out.println("타워 배치 정보 조회 실패: " + e.getMessage());
+		} finally {
+			close();
+		}
+		return placements;
 	}
 
 }

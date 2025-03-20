@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import model.Session;
+import model.TowerPlacement;
 
 /**
  * 게임 세션 데이터 접근 객체 (임시 메모리 저장 방식)
@@ -49,7 +50,7 @@ public class SessionDAO {
     }
     
     /**
-     * 세션 정보 업데이트
+     * 세션 정보 업데이트 (타워 정보 포함)
      * @param session 업데이트할 세션 정보
      * @return 업데이트 성공 여부
      */
@@ -67,7 +68,33 @@ public class SessionDAO {
         // 세션 데이터 업데이트
         sessionMap.put(sessionId, session);
         
+        // 타워 배치 정보도 함께 저장 - 실제 DB에서는 별도 테이블에 저장하게 됨
+        saveTowerPlacements(session);
+        
         return true;
+    }
+    
+    /**
+     * 타워 배치 정보 저장 (가상의 메서드, 실제로는 DB 작업 필요)
+     */
+    private void saveTowerPlacements(Session session) {
+        // 실제 DB 환경에서는 세션 ID와 연결된 타워 배치 정보를 저장
+        // 여기서는 이미 Session 객체 내에 저장되므로 별도 동작 필요 없음
+        System.out.println("타워 배치 정보 저장됨: " + session.getSessionId() + 
+                          ", 타워 수: " + (session.getPlacedTowers() != null ? session.getPlacedTowers().size() : 0));
+    }
+    
+    /**
+     * 세션에 연결된 타워 정보 로드
+     * @param sessionId 세션 ID
+     * @return 타워 배치 목록
+     */
+    public List<TowerPlacement> loadTowerPlacements(int sessionId) {
+        Session session = sessionMap.get(sessionId);
+        if (session != null && session.getPlacedTowers() != null) {
+            return session.getPlacedTowers();
+        }
+        return new ArrayList<>();
     }
     
     /**

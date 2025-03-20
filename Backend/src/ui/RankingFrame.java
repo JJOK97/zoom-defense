@@ -29,11 +29,11 @@ import contorller.RankingController;
 import contorller.UserController;
 import model.Ranking;
 import model.User;
-import ui.common.UIConstants;
-import ui.components.PixelBackgroundPanel;
-import ui.components.PixelButton;
-import ui.components.PixelLabel;
-import ui.components.PixelTextField;
+import ui.components.common.UIConstants;
+import ui.components.common.PixelBackgroundPanel;
+import ui.components.common.PixelButton;
+import ui.components.common.PixelLabel;
+import ui.components.common.PixelTextField;
 
 public class RankingFrame extends JFrame {
 	private static final long serialVersionUID = 1L;

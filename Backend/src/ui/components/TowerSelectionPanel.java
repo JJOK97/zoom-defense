@@ -2,22 +2,28 @@ package ui.components;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
-import java.awt.GridLayout;
+import java.awt.FlowLayout;
 import java.awt.Point;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JLabel;
 import javax.swing.SwingConstants;
+import javax.swing.border.TitledBorder;
 
 import contorller.TowerController;
 import model.Tower;
+import service.TowerService;
+import service.TowerServicelmpl;
 import ui.components.common.PixelButton;
 import ui.components.common.PixelLabel;
 import ui.components.common.UIConstants;
@@ -37,6 +43,7 @@ public class TowerSelectionPanel extends JPanel {
     // 타워 액션 버튼 (구매/업그레이드)
     private PixelButton btnBuyTower;
     private PixelButton btnUpgradeTower;
+    private PixelButton btnCreateBasicTower; // 1단계 타워 생성 버튼
     
     // 현재 사용 가능한 자금
     private int availableMoney = 100;
@@ -59,64 +66,71 @@ public class TowerSelectionPanel extends JPanel {
      * 패널 초기화
      */
     private void initialize() {
-        setLayout(new BorderLayout(0, 10));
-        setOpaque(false);
+        // 기존 코드 제거하고 새로운 레이아웃 적용
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        setBackground(new Color(40, 40, 60, 220));
         
-        // 타이틀
-        PixelLabel lblTitle = new PixelLabel("타워 선택", SwingConstants.CENTER);
-        lblTitle.setForeground(UIConstants.WHITE_COLOR);
-        lblTitle.setFont(UIConstants.getPixelFont());
-        lblTitle.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+        // 상단 제목 패널
+        JPanel titlePanel = new JPanel(new BorderLayout());
+        titlePanel.setOpaque(false);
+        titlePanel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
         
-        // 타워 목록 패널
+        PixelLabel titleLabel = new PixelLabel("타워 컨트롤", SwingConstants.CENTER);
+        titleLabel.setFont(new Font("Dialog", Font.BOLD, 18));
+        titleLabel.setForeground(Color.WHITE);
+        titlePanel.add(titleLabel, BorderLayout.CENTER);
+        
+        // 타워 리스트 패널 초기화
         towerListPanel = new JPanel();
         towerListPanel.setLayout(new BoxLayout(towerListPanel, BoxLayout.Y_AXIS));
         towerListPanel.setOpaque(false);
         
-        // 스크롤 패널에 타워 목록 추가
         JScrollPane scrollPane = new JScrollPane(towerListPanel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.setOpaque(false);
         scrollPane.getViewport().setOpaque(false);
-        scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setPreferredSize(new Dimension(250, 120));
         
-        // 현재 선택된 타워 정보 패널
-        selectedTowerInfoPanel = new JPanel();
-        selectedTowerInfoPanel.setLayout(new BoxLayout(selectedTowerInfoPanel, BoxLayout.Y_AXIS));
-        selectedTowerInfoPanel.setOpaque(false);
-        selectedTowerInfoPanel.setBorder(BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(new Color(200, 200, 200, 120), 1),
-                "타워 정보",
-                SwingConstants.LEFT,
-                SwingConstants.TOP,
-                UIConstants.getPixelFont(),
-                Color.WHITE));
+        // 중앙에 큰 버튼 패널 (메인 기능)
+        JPanel mainButtonPanel = new JPanel();
+        mainButtonPanel.setLayout(new BoxLayout(mainButtonPanel, BoxLayout.Y_AXIS));
+        mainButtonPanel.setOpaque(false);
+        mainButtonPanel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         
-        // 임시 정보 레이블
-        PixelLabel lblNoTowerSelected = new PixelLabel("타워를 선택하세요", SwingConstants.CENTER);
-        lblNoTowerSelected.setForeground(Color.LIGHT_GRAY);
-        lblNoTowerSelected.setFont(UIConstants.getSmallPixelFont());
-        selectedTowerInfoPanel.add(lblNoTowerSelected);
-        
-        // 버튼 패널
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 2, 10, 0));
-        buttonPanel.setOpaque(false);
-        buttonPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
-        
-        // 구매 버튼
-        btnBuyTower = new PixelButton("구매", UIConstants.getPixelFont());
-        btnBuyTower.setEnabled(false);
-        btnBuyTower.addActionListener(new ActionListener() {
+        // 크고 눈에 띄는 타워 생성 버튼
+        btnCreateBasicTower = new PixelButton("기본 타워 설치");
+        btnCreateBasicTower.setFont(new Font("Dialog", Font.BOLD, 16));
+        btnCreateBasicTower.setBackground(new Color(30, 150, 70));
+        btnCreateBasicTower.setForeground(Color.WHITE);
+        btnCreateBasicTower.setPreferredSize(new Dimension(250, 50));
+        btnCreateBasicTower.setMinimumSize(new Dimension(250, 50));
+        btnCreateBasicTower.setMaximumSize(new Dimension(500, 50));
+        btnCreateBasicTower.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnCreateBasicTower.setToolTipText("클릭하여 선택한 위치에 기본 타워 설치 (비용: 50)");
+        btnCreateBasicTower.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                buySelectedTower();
+                createBasicTower();
             }
         });
         
-        // 업그레이드 버튼
-        btnUpgradeTower = new PixelButton("업그레이드", UIConstants.getPixelFont());
+        // 간격 추가
+        mainButtonPanel.add(Box.createVerticalStrut(15));
+        mainButtonPanel.add(btnCreateBasicTower);
+        mainButtonPanel.add(Box.createVerticalStrut(15));
+        
+        // 타워 업그레이드 버튼 (비활성화 상태로 시작)
+        btnUpgradeTower = new PixelButton("타워 업그레이드");
+        btnUpgradeTower.setFont(new Font("Dialog", Font.BOLD, 16));
+        btnUpgradeTower.setBackground(new Color(200, 150, 50));
+        btnUpgradeTower.setForeground(Color.WHITE);
+        btnUpgradeTower.setPreferredSize(new Dimension(250, 50));
+        btnUpgradeTower.setMinimumSize(new Dimension(250, 50));
+        btnUpgradeTower.setMaximumSize(new Dimension(500, 50));
+        btnUpgradeTower.setAlignmentX(Component.CENTER_ALIGNMENT);
         btnUpgradeTower.setEnabled(false);
+        btnUpgradeTower.setToolTipText("선택한 타워를 업그레이드 (타워 선택 필요)");
         btnUpgradeTower.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -124,17 +138,63 @@ public class TowerSelectionPanel extends JPanel {
             }
         });
         
-        buttonPanel.add(btnBuyTower);
-        buttonPanel.add(btnUpgradeTower);
+        mainButtonPanel.add(btnUpgradeTower);
         
-        // 샘플 타워 항목 추가 (임시)
-        addSampleTowers();
+        // 타워 정보 패널 (하단에 배치)
+        selectedTowerInfoPanel = new JPanel();
+        selectedTowerInfoPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(new Color(100, 100, 150), 2),
+            "타워 정보",
+            TitledBorder.CENTER,
+            TitledBorder.TOP,
+            new Font("Dialog", Font.BOLD, 14),
+            Color.WHITE
+        ));
+        selectedTowerInfoPanel.setBackground(new Color(50, 50, 70, 180));
+        selectedTowerInfoPanel.setLayout(new BoxLayout(selectedTowerInfoPanel, BoxLayout.Y_AXIS));
+        selectedTowerInfoPanel.setPreferredSize(new Dimension(250, 150));
         
-        // 메인 패널에 배치
-        add(lblTitle, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
+        // 초기 메시지
+        JLabel instructions = new JLabel("<html><div style='text-align: center;'>맵에서 타워를 설치할<br>위치를 선택하세요</div></html>");
+        instructions.setFont(new Font("Dialog", Font.PLAIN, 14));
+        instructions.setForeground(Color.WHITE);
+        instructions.setAlignmentX(Component.CENTER_ALIGNMENT);
+        selectedTowerInfoPanel.add(Box.createVerticalStrut(20));
+        selectedTowerInfoPanel.add(instructions);
+        
+        // 자금 정보 (추가)
+        JPanel moneyPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        moneyPanel.setOpaque(false);
+        moneyPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel moneyLabel = new JLabel("보유 자금: ");
+        moneyLabel.setFont(new Font("Dialog", Font.BOLD, 14));
+        moneyLabel.setForeground(Color.WHITE);
+        
+        JLabel moneyValue = new JLabel("100");
+        moneyValue.setFont(new Font("Dialog", Font.BOLD, 16));
+        moneyValue.setForeground(new Color(255, 215, 0)); // 골드 색상
+        
+        moneyPanel.add(moneyLabel);
+        moneyPanel.add(moneyValue);
+        selectedTowerInfoPanel.add(Box.createVerticalStrut(15));
+        selectedTowerInfoPanel.add(moneyPanel);
+        
+        // 전체 패널 구성
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setOpaque(false);
+        contentPanel.add(scrollPane);
+        contentPanel.add(Box.createVerticalStrut(15));
+        contentPanel.add(mainButtonPanel);
+        
+        // 레이아웃 조립
+        add(titlePanel, BorderLayout.NORTH);
+        add(contentPanel, BorderLayout.CENTER);
         add(selectedTowerInfoPanel, BorderLayout.SOUTH);
-        add(buttonPanel, BorderLayout.SOUTH);
+        
+        // 기존의 구매 버튼(btnBuyTower)은 사용하지 않을 예정이므로 제거
+        btnBuyTower = null;
     }
     
     /**
@@ -144,12 +204,6 @@ public class TowerSelectionPanel extends JPanel {
         // 임시 타워 데이터 (실제로는 API에서 받아올 예정)
         String[] towerNames = {"공격형 타워", "방어형 타워", "지원형 타워", "특수 타워"};
         int[] costs = {100, 150, 200, 300};
-        String[] descriptions = {
-            "기본 공격 타워: 적에게 데미지를 입힙니다.",
-            "방어 타워: 적의 이동을 늦춥니다.",
-            "지원 타워: 주변 타워의 공격력을 증가시킵니다.",
-            "특수 타워: 범위 공격이 가능합니다."
-        };
         
         for (int i = 0; i < towerNames.length; i++) {
             final int index = i;
@@ -183,7 +237,7 @@ public class TowerSelectionPanel extends JPanel {
             towerPanel.addMouseListener(new java.awt.event.MouseAdapter() {
                 @Override
                 public void mouseClicked(java.awt.event.MouseEvent evt) {
-                    selectTower(towerNames[index], costs[index], descriptions[index]);
+                    selectTower(towerNames[index], costs[index]);
                 }
                 
                 @Override
@@ -216,9 +270,8 @@ public class TowerSelectionPanel extends JPanel {
      * 타워 선택 시 정보 표시
      * @param name 타워 이름
      * @param cost 비용
-     * @param description 설명
      */
-    private void selectTower(String name, int cost, String description) {
+    private void selectTower(String name, int cost) {
         selectedTowerInfoPanel.removeAll();
         
         // 타워 이름
@@ -233,19 +286,9 @@ public class TowerSelectionPanel extends JPanel {
         lblCost.setFont(UIConstants.getSmallPixelFont());
         lblCost.setAlignmentX(CENTER_ALIGNMENT);
         
-        // 타워 설명
-        PixelLabel lblDescription = new PixelLabel("<html><div style='text-align: center;'>" + description + "</div></html>", SwingConstants.CENTER);
-        lblDescription.setForeground(Color.LIGHT_GRAY);
-        lblDescription.setFont(UIConstants.getSmallPixelFont());
-        lblDescription.setAlignmentX(CENTER_ALIGNMENT);
-        
         // 패널에 추가
         selectedTowerInfoPanel.add(lblName);
         selectedTowerInfoPanel.add(lblCost);
-        selectedTowerInfoPanel.add(lblDescription);
-        
-        // 구매 버튼 활성화 (비용이 가능한 경우)
-        btnBuyTower.setEnabled(cost <= availableMoney);
         
         // 업그레이드 버튼은 비활성화 (구매 후 활성화)
         btnUpgradeTower.setEnabled(false);
@@ -255,48 +298,99 @@ public class TowerSelectionPanel extends JPanel {
     }
     
     /**
-     * 현재 선택된 타워 구매
+     * 선택한 타워 구매 처리
      */
     private void buySelectedTower() {
-        if (gameMapPanel != null && selectedTower != null) {
-            // 선택된 셀이 있는지 확인
-            Point selectedCell = gameMapPanel.getSelectedCell();
-            
-            if (selectedCell != null) {
-                int row = selectedCell.y;
-                int col = selectedCell.x;
-                
-                // 타워 설치 요청
-                boolean success = gameMapPanel.placeTower(row, col, selectedTower);
-                
-                if (success) {
-                    // 자금 업데이트
-                    updateAvailableMoney(gameMapPanel.getMoney());
-                    
-                    // 설치 후 선택 해제
-                    gameMapPanel.clearSelection();
-                } else {
-                    // 실패 메시지
-                    JOptionPane.showMessageDialog(this, 
-                        "이 위치에 타워를 설치할 수 없습니다.", 
-                        "설치 실패", 
-                        JOptionPane.WARNING_MESSAGE);
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, 
-                    "타워를 설치할 위치를 선택해주세요.", 
-                    "위치 미선택", 
-                    JOptionPane.INFORMATION_MESSAGE);
-            }
+        // 로그 추가
+        System.out.println("타워 구매 시도");
+        
+        if (selectedTower == null) {
+            System.out.println("선택된 타워가 없습니다.");
+            return;
+        }
+        
+        if (gameMapPanel == null) {
+            System.out.println("게임 맵 패널이 설정되지 않았습니다.");
+            return;
+        }
+        
+        // 선택된 셀 가져오기
+        Point selectedCell = gameMapPanel.getSelectedCell();
+        if (selectedCell == null) {
+            System.out.println("선택된 셀이 없습니다. 먼저 맵에서 위치를 선택해주세요.");
+            return;
+        }
+        
+        // 셀 좌표 출력
+        int row = (int) selectedCell.getY(); 
+        int col = (int) selectedCell.getX();
+        System.out.println("구매 시도: " + selectedTower.getTowerName() + " (ID:" + selectedTower.getTowerId() 
+                          + "), 위치: (" + col + "," + row + ")");
+        
+        // 타워 구매 시도
+        boolean success = gameMapPanel.placeTower(row, col, selectedTower);
+        
+        if (success) {
+            System.out.println("타워 설치 성공!");
+            // 설치 성공 후 잔액 업데이트
+            updateAvailableMoney(gameMapPanel.getMoney());
+            // 선택 초기화
+            gameMapPanel.clearSelection();
+        } else {
+            System.out.println("타워 설치 실패. 자금 부족 또는 타워 설치가 불가능한 위치입니다.");
         }
     }
     
     /**
-     * 설치된 타워 업그레이드
+     * 선택된 타워 업그레이드
      */
-    private void upgradeSelectedTower() {
-        // 업그레이드 로직 (API 연동 필요)
-        System.out.println("타워 업그레이드 요청");
+    public void upgradeSelectedTower() {
+        if (gameMapPanel == null) {
+            System.out.println("게임 맵 패널이 설정되지 않았습니다.");
+            return;
+        }
+        
+        // 선택된 셀 가져오기
+        Point selectedCell = gameMapPanel.getSelectedCell();
+        if (selectedCell == null) {
+            JOptionPane.showMessageDialog(this, "먼저 맵에서 업그레이드할 타워를 선택해주세요.", 
+                                         "알림", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        // 셀 위치
+        int row = (int) selectedCell.getY();
+        int col = (int) selectedCell.getX();
+        
+        // 업그레이드 비용 (임시로 설정, 실제로는 타워 레벨에 따라 다름)
+        int upgradeCost = 50;
+        
+        // 현재 돈
+        int currentMoney = gameMapPanel.getMoney();
+        
+        // 돈이 충분한지 확인
+        if (currentMoney < upgradeCost) {
+            JOptionPane.showMessageDialog(this, "업그레이드 할 돈이 부족합니다. 필요: " + upgradeCost + 
+                                         ", 보유: " + currentMoney, 
+                                         "자금 부족", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // 타워 업그레이드 시도
+        boolean success = gameMapPanel.upgradeTower(row, col);
+        
+        if (success) {
+            // 업그레이드 성공
+            JOptionPane.showMessageDialog(this, "타워가 랜덤으로 업그레이드되었습니다.", 
+                                         "업그레이드 성공", JOptionPane.INFORMATION_MESSAGE);
+            // 선택 초기화
+            gameMapPanel.clearSelection();
+            // 잔액 업데이트
+            updateAvailableMoney(gameMapPanel.getMoney());
+        } else {
+            JOptionPane.showMessageDialog(this, "타워 업그레이드에 실패했습니다. 최대 레벨이거나 업그레이드할 타워가 없습니다.", 
+                                         "업그레이드 실패", JOptionPane.WARNING_MESSAGE);
+        }
     }
     
     /**
@@ -306,11 +400,8 @@ public class TowerSelectionPanel extends JPanel {
     public void updateAvailableMoney(int money) {
         this.availableMoney = money;
         
-        // 구매 버튼 상태 업데이트 (선택된 타워가 있다면)
-        if (btnBuyTower.isEnabled()) {
-            // 이미 선택된 타워의 비용을 확인하고 구매 가능 여부 업데이트
-            // 현재는 임시 구현이므로 생략
-        }
+        // btnBuyTower가 null이므로 이 부분 제거
+        // btnBuyTower와 관련된 코드 삭제
     }
     
     /**
@@ -341,45 +432,147 @@ public class TowerSelectionPanel extends JPanel {
      */
     public void setGameMapPanel(GameMapPanel panel) {
         this.gameMapPanel = panel;
+        
+        // 타워 선택 리스너 설정
+        if (panel != null) {
+            panel.setTowerSelectListener(new GameMapPanel.TowerSelectListener() {
+                @Override
+                public void onTowerSelected(int towerId, int row, int col) {
+                    // 타워 선택 시 업그레이드 버튼 활성화, 생성 버튼 비활성화
+                    btnUpgradeTower.setEnabled(true);
+                    btnCreateBasicTower.setEnabled(false);
+                    
+                    // btnBuyTower는 null이므로 관련 코드 제거
+                    
+                    // 선택된 타워 정보 표시
+                    showSelectedTowerInfo(towerId, row, col);
+                }
+                
+                @Override
+                public void onEmptyCellSelected(int row, int col) {
+                    // 빈 셀 선택 시 생성 버튼 활성화, 업그레이드 버튼 비활성화
+                    btnUpgradeTower.setEnabled(false);
+                    btnCreateBasicTower.setEnabled(true);
+                    
+                    // btnBuyTower와 selectedTower 관련 코드 제거
+                    
+                    // 타워 정보 초기화
+                    clearTowerInfo();
+                }
+            });
+        }
     }
 
     /**
-     * 타워 선택 시 정보 표시
-     * @param tower 선택된 타워 객체
+     * 선택된 타워 정보 표시
      */
-    private void selectTower(Tower tower) {
-        selectedTower = tower;
+    private void showSelectedTowerInfo(int towerId, int row, int col) {
+        // 선택된 타워 정보 패널 초기화
         selectedTowerInfoPanel.removeAll();
         
-        // 타워 이름
-        PixelLabel lblName = new PixelLabel(tower.getTowerName(), SwingConstants.CENTER);
-        lblName.setForeground(UIConstants.GOLD_COLOR);
-        lblName.setFont(UIConstants.getPixelFont());
-        lblName.setAlignmentX(CENTER_ALIGNMENT);
+        // 타워 레벨에 따른 정보
+        String type = "불명";
+        String level = "?";
+        String damage = "?";
+        String range = "?";
+        int upgradeCost = 0;
+        boolean canUpgrade = true;
         
-        // 타워 비용
-        PixelLabel lblCost = new PixelLabel("비용: $" + tower.getCost(), SwingConstants.CENTER);
-        lblCost.setForeground(Color.WHITE);
-        lblCost.setFont(UIConstants.getSmallPixelFont());
-        lblCost.setAlignmentX(CENTER_ALIGNMENT);
+        switch (towerId) {
+            case 1:
+                type = "기본 타워";
+                level = "1";
+                damage = "10";
+                range = "3";
+                upgradeCost = 50;
+                break;
+            case 2:
+                type = "중급 타워";
+                level = "2";
+                damage = "20";
+                range = "4";
+                upgradeCost = 100;
+                break;
+            case 3:
+                type = "고급 타워";
+                level = "3";
+                damage = "35";
+                range = "5";
+                canUpgrade = false; // 최대 레벨
+                break;
+            default:
+                canUpgrade = false;
+        }
         
-        // 타워 속성
-        PixelLabel lblStats = new PixelLabel("<html><div style='text-align: center;'>" +
-                "공격력: " + tower.getDamage() + "<br>" +
-                "범위: " + tower.getRange() + "<br>" +
-                "공격속도: " + tower.getAttackSpeed() +
-                "</div></html>", SwingConstants.CENTER);
-        lblStats.setForeground(Color.LIGHT_GRAY);
-        lblStats.setFont(UIConstants.getSmallPixelFont());
-        lblStats.setAlignmentX(CENTER_ALIGNMENT);
+        // 정보 표시
+        JPanel infoPanel = new JPanel();
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        infoPanel.setOpaque(false);
         
-        // 패널에 추가
-        selectedTowerInfoPanel.add(lblName);
-        selectedTowerInfoPanel.add(lblCost);
-        selectedTowerInfoPanel.add(lblStats);
+        JLabel typeLabel = new JLabel("타입: " + type);
+        typeLabel.setForeground(Color.WHITE);
+        typeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
         
-        // 구매 버튼 활성화 (비용이 가능한 경우)
-        btnBuyTower.setEnabled(tower.getCost() <= availableMoney);
+        JLabel levelLabel = new JLabel("레벨: " + level);
+        levelLabel.setForeground(Color.WHITE);
+        levelLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel posLabel = new JLabel("위치: (" + col + ", " + row + ")");
+        posLabel.setForeground(Color.WHITE);
+        posLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel damageLabel = new JLabel("공격력: " + damage);
+        damageLabel.setForeground(Color.WHITE);
+        damageLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        JLabel rangeLabel = new JLabel("범위: " + range);
+        rangeLabel.setForeground(Color.WHITE);
+        rangeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        infoPanel.add(Box.createVerticalStrut(10));
+        infoPanel.add(typeLabel);
+        infoPanel.add(Box.createVerticalStrut(5));
+        infoPanel.add(levelLabel);
+        infoPanel.add(Box.createVerticalStrut(5));
+        infoPanel.add(posLabel);
+        infoPanel.add(Box.createVerticalStrut(5));
+        infoPanel.add(damageLabel);
+        infoPanel.add(Box.createVerticalStrut(5));
+        infoPanel.add(rangeLabel);
+        infoPanel.add(Box.createVerticalStrut(5));
+        
+        if (canUpgrade) {
+            JLabel upgradeLabel = new JLabel("업그레이드 비용: " + upgradeCost);
+            upgradeLabel.setForeground(new Color(255, 215, 0));
+            upgradeLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            infoPanel.add(upgradeLabel);
+        } else {
+            JLabel maxLabel = new JLabel("최대 레벨");
+            maxLabel.setForeground(new Color(255, 100, 100));
+            maxLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+            infoPanel.add(maxLabel);
+        }
+        
+        selectedTowerInfoPanel.add(infoPanel);
+        btnUpgradeTower.setEnabled(canUpgrade);
+        
+        selectedTowerInfoPanel.revalidate();
+        selectedTowerInfoPanel.repaint();
+    }
+
+    /**
+     * 타워 정보 초기화
+     */
+    private void clearTowerInfo() {
+        selectedTowerInfoPanel.removeAll();
+        
+        JLabel label = new JLabel("<html><div style='text-align: center;'>타워를 설치할<br>위치를 선택하세요</div></html>");
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("Dialog", Font.PLAIN, 14));
+        label.setAlignmentX(Component.CENTER_ALIGNMENT);
+        
+        selectedTowerInfoPanel.add(Box.createVerticalStrut(20));
+        selectedTowerInfoPanel.add(label);
         
         selectedTowerInfoPanel.revalidate();
         selectedTowerInfoPanel.repaint();
@@ -462,7 +655,8 @@ public class TowerSelectionPanel extends JPanel {
         towerPanel.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent evt) {
-                selectTower(tower);
+                selectTower(tower.getTowerName(), tower.getCost());
+                selectedTower = tower; // 선택된 타워 저장
             }
             
             @Override
@@ -480,4 +674,68 @@ public class TowerSelectionPanel extends JPanel {
         
         return towerPanel;
     }
-} 
+
+    /**
+     * 기본 타워 생성 (1레벨 타워)
+     * GameRoomFrame에서도 접근할 수 있도록 public으로 변경
+     */
+    public void createBasicTower() {
+        if (gameMapPanel == null) {
+            System.out.println("게임 맵 패널이 설정되지 않았습니다.");
+            return;
+        }
+        
+        // 선택된 셀 가져오기
+        Point selectedCell = gameMapPanel.getSelectedCell();
+        if (selectedCell == null) {
+            JOptionPane.showMessageDialog(this, "먼저 맵에서 타워를 설치할 위치를 선택해주세요.", 
+                                         "알림", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+        
+        // 셀 위치
+        int row = (int) selectedCell.getY();
+        int col = (int) selectedCell.getX();
+        
+        // 타워 서비스에서 1레벨 타워 가져오기
+        TowerService towerService = new TowerServicelmpl();
+        Tower tower = null;
+        
+        try {
+            tower = towerService.getFirstTower();
+            if (tower == null) {
+                JOptionPane.showMessageDialog(this, "타워 정보를 가져올 수 없습니다.", 
+                                             "오류", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+        } catch (Exception e) {
+            System.out.println("타워 가져오기 실패: " + e.getMessage());
+            e.printStackTrace();
+            return;
+        }
+        
+        // 돈이 충분한지 확인
+        if (gameMapPanel.getMoney() < tower.getCost()) {
+            JOptionPane.showMessageDialog(this, "돈이 부족합니다. 필요: " + tower.getCost() + 
+                                         ", 보유: " + gameMapPanel.getMoney(), 
+                                         "자금 부족", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // 타워 설치 시도
+        boolean success = gameMapPanel.placeTower(row, col, tower);
+        
+        if (success) {
+            // 타워 설치 성공
+            JOptionPane.showMessageDialog(this, "랜덤 1레벨 타워가 설치되었습니다: " + tower.getTowerName(), 
+                                         "설치 성공", JOptionPane.INFORMATION_MESSAGE);
+            // 선택 초기화
+            gameMapPanel.clearSelection();
+            // 잔액 업데이트
+            updateAvailableMoney(gameMapPanel.getMoney());
+        } else {
+            JOptionPane.showMessageDialog(this, "타워 설치에 실패했습니다. 경로 위이거나 이미 타워가 있는 위치입니다.", 
+                                         "설치 실패", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+}

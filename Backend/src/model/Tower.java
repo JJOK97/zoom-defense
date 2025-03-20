@@ -9,8 +9,7 @@ public class Tower {
 	private int cost;
 	private int upgradeCost;
 	private int towerLevel;
-	
-	
+
 	public Tower(int towerId, String towername, int damage, int range, int attackspeed, int cost, int upgradecost,
 			int towerlevel) {
 		super();
