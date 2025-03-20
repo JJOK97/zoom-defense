@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Random;
 import java.util.Iterator;
 import java.awt.Container;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
@@ -78,6 +80,9 @@ public class GameMapPanel extends JPanel {
     private Timer enemySpawnTimer;
     private int spawnDelay = 1000; // 1초마다 적 생성
     
+    // 타워별 마지막 공격 시간을 저장하는 맵 추가
+    private Map<String, Long> lastAttackTimeMap = new HashMap<>();
+
     // 공격 애니메이션을 위한 데이터 구조
     private class AttackAnimation {
         private int startX, startY;   // 공격 시작 위치
@@ -86,8 +91,9 @@ public class GameMapPanel extends JPanel {
         private int duration;         // 애니메이션 지속 시간(ms)
         private int damage;           // 공격 데미지
         private Color color;          // 공격 효과 색상
+        private int animationType;    // 애니메이션 타입 (0: 직선, 1: 포물선, 2: 레이저)
         
-        public AttackAnimation(int startX, int startY, int targetX, int targetY, int damage, Color color) {
+        public AttackAnimation(int startX, int startY, int targetX, int targetY, int damage, Color color, int animationType) {
             this.startX = startX;
             this.startY = startY;
             this.targetX = targetX;
@@ -96,6 +102,7 @@ public class GameMapPanel extends JPanel {
             this.duration = 500; // 0.5초
             this.damage = damage;
             this.color = color;
+            this.animationType = animationType;
         }
         
         public boolean isActive() {
@@ -130,6 +137,9 @@ public class GameMapPanel extends JPanel {
     private int countdown = 0;
     private long countdownStartTime = 0;
     private boolean isCountingDown = false;
+
+    // 타워 정보 캐시 추가
+    private Map<Integer, Tower> towerCache = new HashMap<>();
 
     /**
      * 기본 생성자
@@ -424,6 +434,29 @@ public class GameMapPanel extends JPanel {
     }
     
     /**
+     * 타워 정보를 가져오되, 캐시를 활용하여 불필요한 DB 접근 최소화
+     * @param towerId 타워 ID
+     * @return 타워 정보
+     */
+    private Tower getTowerInfo(int towerId) {
+        // 캐시에 해당 타워 정보가 있는지 확인
+        if (towerCache.containsKey(towerId)) {
+            return towerCache.get(towerId);
+        }
+        
+        // 캐시에 없으면 DB에서 조회
+        TowerController towerController = new TowerController();
+        Tower towerInfo = towerController.getTowerById(towerId);
+        
+        if (towerInfo != null) {
+            // 캐시에 저장
+            towerCache.put(towerId, towerInfo);
+        }
+        
+        return towerInfo;
+    }
+    
+    /**
      * 타워 업데이트 (적 공격)
      */
     private void updateTowers() {
@@ -435,62 +468,138 @@ public class GameMapPanel extends JPanel {
                     int towerCenterX = col * GRID_SIZE + GRID_SIZE / 2;
                     int towerCenterY = row * GRID_SIZE + GRID_SIZE / 2;
                     
-                    // 타워 정보에 따른 사거리 및 공격력 결정
-                    int range = 150; // 기본 사거리
-                    int damage = 10; // 기본 공격력
-                    Color attackColor;
+                    // 캐시를 활용하여 타워 정보 조회
+                    Tower towerInfo = getTowerInfo(towerId);
                     
-                    switch(towerId) {
-                        case 1: // 1단계 타워
-                            range = 150;
-                            damage = 10;
-                            attackColor = new Color(50, 220, 255);
-                            break;
-                        case 2: // 2단계 타워
-                            range = 200;
-                            damage = 20;
-                            attackColor = new Color(255, 215, 0);
-                            break;
-                        case 3: // 3단계 타워
-                            range = 250;
-                            damage = 35;
-                            attackColor = new Color(255, 50, 50);
-                            break;
-                        default:
-                            attackColor = Color.WHITE;
+                    if (towerInfo == null) {
+                        // 타워 정보를 가져오지 못한 경우 기본값 사용
+                        System.out.println("타워 정보를 가져오지 못했습니다. ID: " + towerId);
+                        continue;
                     }
                     
-                    // 가장 가까운 적 찾기
-                    GameEnemy target = findClosestEnemy(towerCenterX, towerCenterY, range);
+                    // 타워 정보에 따른 사거리 및 공격력
+                    int range = towerInfo.getRange() * 50; // DB의 사거리 값을 픽셀 단위로 변환
+                    int damage = towerInfo.getDamage(); // DB에서 가져온 공격력
                     
-                    if (target != null) {
-                        // 적에게 데미지 주기
-                        target.takeDamage(damage);
+                    // 타워별 공격 속도 계산 (초당 공격 횟수를 밀리초 단위 대기 시간으로 변환)
+                    double attackSpeed = towerInfo.getAttackSpeed(); // 초당 공격 횟수
+                    int attackDelay = (int) (1000 / attackSpeed); // 공격 간격 (밀리초)
+                    
+                    // 타워 위치키 생성 (행+열 조합)
+                    String towerKey = row + "," + col;
+                    
+                    // 마지막 공격 시간 확인
+                    long currentTime = System.currentTimeMillis();
+                    Long lastAttackTime = lastAttackTimeMap.get(towerKey);
+                    
+                    // 첫 공격이거나 충분한 시간이 지났으면 공격 가능
+                    if (lastAttackTime == null || (currentTime - lastAttackTime >= attackDelay)) {
+                        // 가장 가까운 적 찾기
+                        GameEnemy target = findClosestEnemy(towerCenterX, towerCenterY, range);
                         
-                        // 공격 애니메이션 추가
-                        attackAnimations.add(new AttackAnimation(
-                            towerCenterX, 
-                            towerCenterY, 
-                            target.getX() + target.getSize() / 2, 
-                            target.getY() + target.getSize() / 2,
-                            damage,
-                            attackColor
-                        ));
-                        
-                        // 적이 죽었는지 확인
-                        if (target.getHealth() <= 0) {
-                            // 적이 죽으면 돈 획득
-                            money += target.getReward();
+                        if (target != null) {
+                            // 마지막 공격 시간 업데이트
+                            lastAttackTimeMap.put(towerKey, currentTime);
                             
-                            // 처치한 적 카운트 증가
-                            killedEnemies++;
+                            // 적에게 데미지 주기
+                            target.takeDamage(damage);
                             
-                            // 점수 증가 - 적의 종류에 따라 다른 점수 부여
-                            int enemyScore = target.getReward() * 10; // 보상금의 10배를 점수로
-                            score += enemyScore;
+                            Color attackColor;
+                            int animationType;
                             
-                            // 적 제거
-                            activeEnemies.remove(target);
+                            // 타워 ID에 따라 공격 색상 결정
+                            switch(towerId) {
+                                case 1: // 기본 포탑
+                                    attackColor = new Color(50, 220, 255); // 파란색
+                                    animationType = 0; // 직선 발사
+                                    break;
+                                case 2: // 화염 발사기
+                                    attackColor = new Color(255, 100, 20); // 주황색
+                                    animationType = 1; // 포물선
+                                    break;
+                                case 3: // 얼음 타워
+                                    attackColor = new Color(100, 200, 255); // 하늘색
+                                    animationType = 0; // 직선 발사
+                                    break;
+                                case 4: // 전기 타워
+                                    attackColor = new Color(255, 255, 0); // 노란색
+                                    animationType = 2; // 레이저
+                                    break;
+                                case 5: // 대포
+                                    attackColor = new Color(80, 80, 80); // 회색
+                                    animationType = 1; // 포물선
+                                    break;
+                                case 6: // 강화 포탑
+                                    attackColor = new Color(150, 100, 200); // 보라색
+                                    animationType = 0; // 직선 발사
+                                    break;
+                                case 7: // 중포
+                                    attackColor = new Color(120, 100, 50); // 갈색
+                                    animationType = 1; // 포물선
+                                    break;
+                                case 8: // 지옥불 발사기
+                                    attackColor = new Color(255, 50, 0); // 빨간색
+                                    animationType = 1; // 포물선
+                                    break;
+                                case 9: // 블리자드 타워
+                                    attackColor = new Color(0, 180, 255); // 밝은 파란색
+                                    animationType = 0; // 직선 발사
+                                    break;
+                                case 10: // 번개 타워
+                                    attackColor = new Color(255, 215, 0); // 금색
+                                    animationType = 2; // 레이저
+                                    break;
+                                case 11: // 초강력 포탑
+                                    attackColor = new Color(200, 0, 200); // 자주색
+                                    animationType = 0; // 직선 발사
+                                    break;
+                                case 12: // 파괴자 대포
+                                    attackColor = new Color(255, 50, 50); // 밝은 빨간색
+                                    animationType = 1; // 포물선
+                                    break;
+                                case 13: // 태양열 발사기
+                                    attackColor = new Color(255, 150, 0); // 주황색
+                                    animationType = 1; // 포물선
+                                    break;
+                                case 14: // 절대영도 타워
+                                    attackColor = new Color(0, 220, 220); // 청록색
+                                    animationType = 0; // 직선 발사
+                                    break;
+                                case 15: // 천둥 타워
+                                    attackColor = new Color(220, 220, 255); // 흰색에 가까운 파란색
+                                    animationType = 2; // 레이저
+                                    break;
+                                default:
+                                    attackColor = Color.WHITE;
+                                    animationType = 0; // 기본: 직선 발사
+                            }
+                            
+                            // 공격 애니메이션 추가
+                            attackAnimations.add(new AttackAnimation(
+                                towerCenterX, 
+                                towerCenterY, 
+                                target.getX() + target.getSize() / 2, 
+                                target.getY() + target.getSize() / 2,
+                                damage,
+                                attackColor,
+                                animationType
+                            ));
+                            
+                            // 적이 죽었는지 확인
+                            if (target.getHealth() <= 0) {
+                                // 적이 죽으면 돈 획득
+                                money += target.getReward();
+                                
+                                // 처치한 적 카운트 증가
+                                killedEnemies++;
+                                
+                                // 점수 증가 - 적의 종류에 따라 다른 점수 부여
+                                int enemyScore = target.getReward() * 10; // 보상금의 10배를 점수로
+                                score += enemyScore;
+                                
+                                // 적 제거
+                                activeEnemies.remove(target);
+                            }
                         }
                     }
                 }
@@ -616,6 +725,9 @@ public class GameMapPanel extends JPanel {
             System.out.println("배치 실패: 자금 부족 (필요: " + tower.getCost() + ", 보유: " + money + ")");
             return false;
         }
+        
+        // 타워 정보를 캐시에 추가
+        towerCache.put(tower.getTowerId(), tower);
         
         // 세션 ID 가져오기 시도
         int sessionId = 0;
@@ -820,6 +932,11 @@ public class GameMapPanel extends JPanel {
         System.out.println("타워 업그레이드 완료: ID=" + upgradedTower.getTowerId() + 
                            ", 레벨=" + upgradedTower.getTowerLevel() + 
                            ", 이름=" + upgradedTower.getTowerName());
+        
+        // 업그레이드된 타워를 캐시에 추가
+        if (upgradedTower != null) {
+            towerCache.put(upgradedTower.getTowerId(), upgradedTower);
+        }
         
         return true;
     }
@@ -1035,25 +1152,85 @@ public class GameMapPanel extends JPanel {
                     int x = col * GRID_SIZE;
                     int y = row * GRID_SIZE;
                     
-                    // 타워 레벨에 따라 다른 색상과 크기로 표시
+                    // 캐시를 활용하여 타워 정보 조회
+                    Tower towerInfo = getTowerInfo(towerId);
+                    
+                    if (towerInfo == null) {
+                        continue; // 타워 정보가 없으면 그리지 않음
+                    }
+                    
+                    // 타워 레벨에 따른 크기 설정
+                    int size = GRID_SIZE - 10;
+                    if (towerInfo.getTowerLevel() == 2) {
+                        size = GRID_SIZE - 8; // 2단계 타워는 약간 더 크게
+                    } else if (towerInfo.getTowerLevel() == 3) {
+                        size = GRID_SIZE - 6; // 3단계 타워는 더 크게
+                    }
+                    
+                    // 타워 ID에 따라 다른 색상으로 표시
                     Color baseColor;
                     Color topColor;
-                    int size = GRID_SIZE - 10;
                     
                     switch (towerId) {
-                        case 1: // 1단계 타워 - 파란색
+                        case 1: // 기본 포탑
                             baseColor = new Color(30, 100, 200);
                             topColor = new Color(100, 180, 255);
                             break;
-                        case 2: // 2단계 타워 - 노란색
-                            baseColor = new Color(200, 180, 30);
-                            topColor = new Color(255, 220, 50);
-                            size = GRID_SIZE - 8; // 약간 더 크게
+                        case 2: // 화염 발사기
+                            baseColor = new Color(180, 50, 0);
+                            topColor = new Color(255, 100, 20);
                             break;
-                        case 3: // 3단계 타워 - 빨간색
-                            baseColor = new Color(200, 50, 50);
-                            topColor = new Color(255, 100, 100);
-                            size = GRID_SIZE - 6; // 더 크게
+                        case 3: // 얼음 타워
+                            baseColor = new Color(0, 100, 180);
+                            topColor = new Color(100, 200, 255);
+                            break;
+                        case 4: // 전기 타워
+                            baseColor = new Color(180, 180, 0);
+                            topColor = new Color(255, 255, 0);
+                            break;
+                        case 5: // 대포
+                            baseColor = new Color(50, 50, 50);
+                            topColor = new Color(100, 100, 100);
+                            break;
+                        case 6: // 강화 포탑
+                            baseColor = new Color(100, 50, 150);
+                            topColor = new Color(150, 100, 200);
+                            break;
+                        case 7: // 중포
+                            baseColor = new Color(80, 60, 20);
+                            topColor = new Color(120, 100, 50);
+                            break;
+                        case 8: // 지옥불 발사기
+                            baseColor = new Color(150, 20, 0);
+                            topColor = new Color(255, 50, 0);
+                            break;
+                        case 9: // 블리자드 타워
+                            baseColor = new Color(0, 100, 150);
+                            topColor = new Color(0, 180, 255);
+                            break;
+                        case 10: // 번개 타워
+                            baseColor = new Color(180, 140, 0);
+                            topColor = new Color(255, 215, 0);
+                            break;
+                        case 11: // 초강력 포탑
+                            baseColor = new Color(150, 0, 150);
+                            topColor = new Color(200, 0, 200);
+                            break;
+                        case 12: // 파괴자 대포
+                            baseColor = new Color(180, 30, 30);
+                            topColor = new Color(255, 50, 50);
+                            break;
+                        case 13: // 태양열 발사기
+                            baseColor = new Color(200, 100, 0);
+                            topColor = new Color(255, 150, 0);
+                            break;
+                        case 14: // 절대영도 타워
+                            baseColor = new Color(0, 150, 150);
+                            topColor = new Color(0, 220, 220);
+                            break;
+                        case 15: // 천둥 타워
+                            baseColor = new Color(150, 150, 200);
+                            topColor = new Color(220, 220, 255);
                             break;
                         default:
                             baseColor = Color.GRAY;
@@ -1085,7 +1262,7 @@ public class GameMapPanel extends JPanel {
                     // 타워 레벨 표시
                     g2d.setColor(Color.WHITE);
                     g2d.setFont(new Font("Arial", Font.BOLD, 12));
-                    String levelText = String.valueOf(towerId);
+                    String levelText = String.valueOf(towerInfo.getTowerLevel());
                     FontMetrics fm = g2d.getFontMetrics();
                     g2d.drawString(levelText, 
                                   x + (GRID_SIZE - fm.stringWidth(levelText)) / 2,
@@ -1498,18 +1675,19 @@ public class GameMapPanel extends JPanel {
             
             float progress = anim.getProgress();
             
-            // 현재 애니메이션 위치 계산
-            int currentX = (int)(anim.startX + (anim.targetX - anim.startX) * progress);
-            int currentY = (int)(anim.startY + (anim.targetY - anim.startY) * progress);
-            
-            // 공격 효과 그리기 (레이저 빔 스타일)
-            g2d.setColor(anim.color);
-            g2d.setStroke(new BasicStroke(3.0f));
-            g2d.drawLine(anim.startX, anim.startY, currentX, currentY);
-            
-            // 공격 충돌 효과 (원)
-            int effectSize = 10 + (int)(10 * progress);
-            g2d.fillOval(currentX - effectSize/2, currentY - effectSize/2, effectSize, effectSize);
+            switch (anim.animationType) {
+                case 0: // 직선 발사 (일반 투사체)
+                    drawStraightProjectile(g2d, anim, progress);
+                    break;
+                case 1: // 포물선 발사 (대포, 화염발사기 등)
+                    drawParabolicProjectile(g2d, anim, progress);
+                    break;
+                case 2: // 레이저 빔 (전기 타워 등)
+                    drawLaserBeam(g2d, anim, progress);
+                    break;
+                default:
+                    drawStraightProjectile(g2d, anim, progress);
+            }
             
             // 데미지 텍스트 표시 (애니메이션 중간쯤에서)
             if (progress > 0.4f && progress < 0.6f) {
@@ -1521,6 +1699,99 @@ public class GameMapPanel extends JPanel {
         
         // 완료된 애니메이션 제거
         attackAnimations.removeAll(finishedAnimations);
+    }
+    
+    // 직선 투사체 그리기 (기본 포탑, 얼음 타워 등)
+    private void drawStraightProjectile(Graphics2D g2d, AttackAnimation anim, float progress) {
+        int currentX = (int)(anim.startX + (anim.targetX - anim.startX) * progress);
+        int currentY = (int)(anim.startY + (anim.targetY - anim.startY) * progress);
+        
+        // 투사체 크기
+        int projectileSize = 8;
+        
+        // 투사체 그리기
+        g2d.setColor(anim.color);
+        g2d.fillOval(currentX - projectileSize/2, currentY - projectileSize/2, projectileSize, projectileSize);
+        
+        // 투사체 테두리
+        g2d.setColor(new Color(255, 255, 255, 150));
+        g2d.drawOval(currentX - projectileSize/2, currentY - projectileSize/2, projectileSize, projectileSize);
+        
+        // 충돌 효과 (목표 지점 가까이에서)
+        if (progress > 0.8f) {
+            int effectSize = (int)(projectileSize * 2 * (progress - 0.8f) * 5); // 점점 커지는 효과
+            g2d.setColor(new Color(anim.color.getRed(), anim.color.getGreen(), anim.color.getBlue(), 
+                           (int)(255 * (1 - (progress - 0.8f) * 5))));
+            g2d.fillOval(currentX - effectSize/2, currentY - effectSize/2, effectSize, effectSize);
+        }
+    }
+    
+    // 포물선 투사체 그리기 (대포, 화염발사기 등)
+    private void drawParabolicProjectile(Graphics2D g2d, AttackAnimation anim, float progress) {
+        // 수평 위치는 선형으로 이동
+        int currentX = (int)(anim.startX + (anim.targetX - anim.startX) * progress);
+        
+        // 수직 위치는 포물선 형태 (위로 올라갔다 내려옴)
+        double heightFactor = Math.sin(progress * Math.PI); // 0->1->0 사이의 값
+        int maxHeight = 50; // 최대 높이 변위
+        int currentY = (int)(anim.startY + (anim.targetY - anim.startY) * progress - heightFactor * maxHeight);
+        
+        // 투사체 크기 (진행에 따라 약간 변화)
+        int projectileSize = (int)(10 + 4 * heightFactor);
+        
+        // 투사체 그리기
+        g2d.setColor(anim.color);
+        g2d.fillOval(currentX - projectileSize/2, currentY - projectileSize/2, projectileSize, projectileSize);
+        
+        // 그림자 효과
+        g2d.setColor(new Color(0, 0, 0, 50));
+        int shadowY = (int)(anim.startY + (anim.targetY - anim.startY) * progress);
+        int shadowSize = (int)(projectileSize * 0.7f);
+        g2d.fillOval(currentX - shadowSize/2, shadowY - shadowSize/4, shadowSize, shadowSize/2);
+        
+        // 충돌 효과 (목표 지점 가까이에서)
+        if (progress > 0.9f) {
+            // 폭발 효과
+            int explosionSize = (int)(projectileSize * 3 * (progress - 0.9f) * 10);
+            g2d.setColor(new Color(anim.color.getRed(), anim.color.getGreen(), anim.color.getBlue(), 
+                           (int)(200 * (1 - (progress - 0.9f) * 10))));
+            g2d.fillOval(anim.targetX - explosionSize/2, anim.targetY - explosionSize/2, 
+                          explosionSize, explosionSize);
+        }
+    }
+    
+    // 레이저 빔 그리기 (전기 타워, 번개 타워 등)
+    private void drawLaserBeam(Graphics2D g2d, AttackAnimation anim, float progress) {
+        // 레이저 선 굵기 (시간이 지남에 따라 줄어듦)
+        float thickness = 3.0f * (1 - progress * 0.7f);
+        g2d.setStroke(new BasicStroke(thickness));
+        
+        // 메인 레이저 빔
+        g2d.setColor(anim.color);
+        g2d.drawLine(anim.startX, anim.startY, anim.targetX, anim.targetY);
+        
+        // 내부 빛나는 선 (더 밝은 색상)
+        Color brighterColor = new Color(
+            Math.min(255, anim.color.getRed() + 50),
+            Math.min(255, anim.color.getGreen() + 50),
+            Math.min(255, anim.color.getBlue() + 50),
+            150
+        );
+        g2d.setStroke(new BasicStroke(thickness * 0.6f));
+        g2d.setColor(brighterColor);
+        g2d.drawLine(anim.startX, anim.startY, anim.targetX, anim.targetY);
+        
+        // 레이저 효과 (끝 부분이 깜빡임)
+        if (progress < 0.7f) { // 레이저가 활성화된 동안만
+            // 레이저 끝부분의 빛나는 효과
+            int glowSize = (int)(8 + 4 * Math.sin(progress * 20)); // 깜빡이는 효과
+            g2d.setColor(anim.color);
+            g2d.fillOval(anim.targetX - glowSize/2, anim.targetY - glowSize/2, glowSize, glowSize);
+            
+            // 중심부 더 밝게
+            g2d.setColor(Color.WHITE);
+            g2d.fillOval(anim.targetX - glowSize/4, anim.targetY - glowSize/4, glowSize/2, glowSize/2);
+        }
     }
     
     // 이 메서드도 추가하여 일시정지 기능 구현
