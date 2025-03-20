@@ -4,7 +4,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import config.DBConnection;
 import model.Session;
@@ -34,28 +33,29 @@ public class SessionDAO {
         }
     }
 
-
-    // 새로운 게임 세션 생성 (자동 증가된 SESSION_ID 사용)
- // 새로운 게임 세션 생성 (이미 설정된 시퀀스와 트리거 사용)
+    /**
+     * 새로운 게임 세션 생성
+     * @param session 생성할 세션 정보 (userId 필수)
+     * @return 생성된 세션 ID
+     */
     public int createSession(Session session) {
         String sql = "INSERT INTO GAME_SESSIONS (USER_ID, MONEY, LIFE, SCORE, WAVE) " +
                     "VALUES (?, ?, ?, ?, ?)";
         
         String getIdSql = "SELECT SESSION_SEQ.CURRVAL FROM DUAL";
-        // SESSION_SEQ : DB 스키마 참고,  CURRVAL : 현재 값, *DUAL : 시퀀스 값이 들어있는 가상테이블* -> 중요함
         
         int sessionId = 0;
         
         try {
-            Connection conn = getConnection();
+            conn = getConnection();
             PreparedStatement pstmt = conn.prepareStatement(sql);
             
-            // 세션 생성 시 초기 값 세팅
-            pstmt.setInt(1, session.getUserId()); // 사용자 ID
-            pstmt.setInt(2, session.getMoney()); // 초기 자금
-            pstmt.setInt(3, session.getLife()); // 초기 생명력
-            pstmt.setInt(4, 0); // 기본 점수 0으로 초기화
-            pstmt.setInt(5, 1); // 첫 번째 웨이브부터 시작
+            // 세션 생성 시 값 세팅
+            pstmt.setInt(1, session.getUserId());
+            pstmt.setInt(2, session.getMoney());
+            pstmt.setInt(3, session.getLife());
+            pstmt.setInt(4, session.getScore());
+            pstmt.setInt(5, session.getWave());
             
             int result = pstmt.executeUpdate();
             
@@ -65,15 +65,15 @@ public class SessionDAO {
                 ResultSet rs = seqStmt.executeQuery();
                 if (rs.next()) {
                     sessionId = rs.getInt(1);
-                    System.out.println("세션 생성 성공! SESSION_ID: " + sessionId);
                 }
                 rs.close();
                 seqStmt.close();
             }
         } catch (Exception e) {
             System.out.println("세션 생성 실패: " + e.getMessage());
+            e.printStackTrace();
         } finally {
-            close(); // 자원 해제
+            close();
         }
         return sessionId;
     }
