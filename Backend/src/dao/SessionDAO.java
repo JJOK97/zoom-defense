@@ -1,187 +1,106 @@
 package dao;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
-
-import config.DBConnection;
 import model.Session;
 
+/**
+ * 게임 세션 데이터 접근 객체 (임시 메모리 저장 방식)
+ */
 public class SessionDAO {
-
-	private Connection conn;
-	private PreparedStatement pstmt;
-	private ResultSet rs;
-
-    // DB 연결 가져오기
-    private Connection getConnection() {
-        return DBConnection.getInstance().getConnection();
-    }
-
-    // 자원 해제 메서드
-    private void close() {
-        try {
-            if (rs != null) {
-                rs.close();
-            }
-            if (pstmt != null) {
-                pstmt.close();
-            }
-        } catch (SQLException e) {
-            System.out.println("자원 해제 중 오류: " + e.getMessage());
-        }
-    }
-
-
+    
+    // 세션 ID 자동 증가 변수
+    private static AtomicInteger sessionIdCounter = new AtomicInteger(1);
+    
+    // 세션 데이터 저장을 위한 임시 Map (실제로는 DB 사용)
+    private static Map<Integer, Session> sessionMap = new HashMap<>();
+    
+    // 사용자별 세션 목록 (실제로는 DB의 인덱스 역할)
+    private static Map<Integer, List<Integer>> userSessionMap = new HashMap<>();
+    
     /**
-     * 새로운 게임 세션 생성
-     * @param session 생성할 세션 정보 (userId 필수)
+     * 새 게임 세션 생성
+     * @param session 생성할 세션 정보
      * @return 생성된 세션 ID
      */
     public int createSession(Session session) {
-        String sql = "INSERT INTO GAME_SESSIONS (USER_ID, MONEY, LIFE, SCORE, WAVE) " +
-                    "VALUES (?, ?, ?, ?, ?)";
+        // 세션 ID 생성
+        int sessionId = sessionIdCounter.getAndIncrement();
         
-        String getIdSql = "SELECT SESSION_SEQ.CURRVAL FROM DUAL";
+        // 현재 시간 설정
+        session.setLoadTime(new Timestamp(System.currentTimeMillis()));
         
-        int sessionId = 0;
+        // 세션 ID 설정
+        session.setSessionId(sessionId);
         
-        try {
-            conn = getConnection();
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            
-            // 세션 생성 시 값 세팅
-            pstmt.setInt(1, session.getUserId());
-            pstmt.setInt(2, session.getMoney());
-            pstmt.setInt(3, session.getLife());
-            pstmt.setInt(4, session.getScore());
-            pstmt.setInt(5, session.getWave());
-            
-            int result = pstmt.executeUpdate();
-            
-            if (result > 0) {
-                // 현재 시퀀스 값을 조회하여 생성된 SESSION_ID 가져오기
-                PreparedStatement seqStmt = conn.prepareStatement(getIdSql);
-                ResultSet rs = seqStmt.executeQuery();
-                if (rs.next()) {
-                    sessionId = rs.getInt(1);
-                }
-                rs.close();
-                seqStmt.close();
-            }
-        } catch (Exception e) {
-            System.out.println("세션 생성 실패: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            close();
-        }
+        // 세션 데이터 저장
+        sessionMap.put(sessionId, session);
+        
+        // 사용자 세션 목록에 추가
+        int userId = session.getUserId();
+        userSessionMap.computeIfAbsent(userId, k -> new ArrayList<>()).add(sessionId);
+        
         return sessionId;
     }
     
-    
-    // 현 게임 상태 저장
-	public boolean updateSession(Session session) {
-		String sql = "UPDATE GAME_SESSIONS SET MONEY = ?, LIFE = ?, SCORE = ?, WAVE = ? WHERE SESSION_ID = ?";
-
-		boolean success = false;
-
-		try {
-			Connection conn = getConnection();
-			PreparedStatement pstmt = conn.prepareStatement(sql);
-
-			pstmt.setInt(1, session.getMoney()); // 현재 자금
-			pstmt.setInt(2, session.getLife()); // 현재 생명력
-			pstmt.setInt(3, session.getScore()); // 현재 점수
-            pstmt.setInt(4, session.getWave()); // 현재 웨이브
-            pstmt.setInt(5, session.getSessionId()); // 세션 ID
-            
-            int result = pstmt.executeUpdate();
-            
-            if (result > 0) {
-                System.out.println("세션 업데이트 성공! SESSION_ID: " + session.getSessionId());
-                success = true;
-            }
-        } catch (Exception e) {
-            System.out.println("세션 업데이트 실패: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            close();
+    /**
+     * 세션 정보 업데이트
+     * @param session 업데이트할 세션 정보
+     * @return 업데이트 성공 여부
+     */
+    public boolean updateSession(Session session) {
+        int sessionId = session.getSessionId();
+        
+        // 세션 존재 확인
+        if (!sessionMap.containsKey(sessionId)) {
+            return false;
         }
         
-        return success;
-	}
-	
-	
-	// 해당 유저의 플레이 세션 불러오기
-	public List<Session> getUserSessions(int userId) {
-	    List<Session> sessions = new ArrayList<>();
-	    String sql = "SELECT * FROM GAME_SESSIONS WHERE USER_ID = ? ORDER BY LOAD_TIME DESC";
-
-	    try (Connection conn = getConnection();
-	         PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-	        pstmt.setInt(1, userId);
-	        ResultSet rs = pstmt.executeQuery();
-
-	        while (rs.next()) {
-	            Session session = new Session();
-	            session.setSessionId(rs.getInt("SESSION_ID"));
-	            session.setUserId(rs.getInt("USER_ID"));
-	            session.setMoney(rs.getInt("MONEY"));
-	            session.setLife(rs.getInt("LIFE"));
-	            session.setScore(rs.getInt("SCORE"));
-	            session.setWave(rs.getInt("WAVE"));
-	            session.setLoadTime(rs.getTimestamp("LOAD_TIME"));
-	            sessions.add(session);
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
-	    return sessions;
-	}
-
-	
-	// 저장된 게임 정보 로드
-	public Session loadUserSessions(int sessionId) {
-		
-		String sql = "Select * from GAME_SESSIONS where session_id = ?";
-		
-		
-		try {
-			Connection conn = getConnection();
-			PreparedStatement pstmt = conn.prepareStatement(sql);
-			
-			pstmt.setInt(1, sessionId);
-			
-			ResultSet rs = pstmt.executeQuery();
-			
-			if (rs.next()) { 
-	            Session session = new Session();
-	            session.setSessionId(rs.getInt("session_id"));
-	            session.setUserId(rs.getInt("user_id"));
-	            session.setMoney(rs.getInt("money"));
-	            session.setLife(rs.getInt("life"));
-	            session.setWave(rs.getInt("wave"));
-	            session.setScore(rs.getInt("score"));
-	            session.setLoadTime(rs.getTimestamp("load_time"));
-	            
-	            return session;
-	        }
-			
-		} catch (SQLException e) {
-			
-			e.printStackTrace();
-		}
-		
-		return null;
-		
-	}
-
-	
-	
+        // 세션 업데이트 시간 갱신
+        session.setLoadTime(new Timestamp(System.currentTimeMillis()));
+        
+        // 세션 데이터 업데이트
+        sessionMap.put(sessionId, session);
+        
+        return true;
+    }
+    
+    /**
+     * 사용자의 세션 목록 조회
+     * @param userId 사용자 ID
+     * @return 사용자의 세션 목록
+     */
+    public List<Session> getUserSessions(int userId) {
+        List<Session> result = new ArrayList<>();
+        
+        // 사용자의 세션 ID 목록 조회
+        List<Integer> sessionIds = userSessionMap.get(userId);
+        
+        if (sessionIds != null) {
+            // 최근 세션부터 조회
+            for (int i = sessionIds.size() - 1; i >= 0; i--) {
+                int sessionId = sessionIds.get(i);
+                Session session = sessionMap.get(sessionId);
+                if (session != null) {
+                    result.add(session);
+                }
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 특정 세션 정보 조회
+     * @param sessionId 세션 ID
+     * @return 세션 정보
+     */
+    public Session loadUserSessions(int sessionId) {
+        return sessionMap.get(sessionId);
+    }
 }

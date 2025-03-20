@@ -22,12 +22,12 @@ import javax.swing.border.EmptyBorder;
 
 import contorller.UserController;
 import contorller.SessionController;
-import ui.common.UIConstants;
-import ui.components.PixelBackgroundPanel;
-import ui.components.PixelButton;
-import ui.components.PixelLabel;
-import ui.components.PixelPasswordField;
-import ui.components.PixelTextField;
+import ui.components.common.UIConstants;
+import ui.components.common.PixelBackgroundPanel;
+import ui.components.common.PixelButton;
+import ui.components.common.PixelLabel;
+import ui.components.common.PixelPasswordField;
+import ui.components.common.PixelTextField;
 import model.User;
 
 /**

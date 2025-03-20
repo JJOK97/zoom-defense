@@ -1,4 +1,4 @@
-package ui.common;
+package ui.components.common;
 
 import java.awt.Color;
 import java.awt.Dimension;

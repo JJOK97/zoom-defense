@@ -21,10 +21,12 @@ import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import javax.swing.border.EmptyBorder;
 
-import ui.common.UIConstants;
-import ui.components.PixelBackgroundPanel;
-import ui.components.PixelButton;
-import ui.components.PixelLabel;
+import contorller.SessionController;
+import ui.components.common.UIConstants;
+import ui.components.common.PixelBackgroundPanel;
+import ui.components.common.PixelButton;
+import ui.components.common.PixelLabel;
+import model.Session;
 import model.User;
 
 /**
@@ -225,8 +227,8 @@ public class GameSelectionFrame extends JFrame {
 		btnNewGame.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JOptionPane.showMessageDialog(GameSelectionFrame.this, "새 게임 기능은 아직 구현되지 않았습니다.", "개발 중",
-						JOptionPane.INFORMATION_MESSAGE);
+				// 새 게임 시작
+				startNewGame();
 			}
 		});
 		buttonPanel.add(btnNewGame, gbc);
@@ -242,8 +244,8 @@ public class GameSelectionFrame extends JFrame {
 		btnContinue.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				JOptionPane.showMessageDialog(GameSelectionFrame.this, "이어하기 기능은 아직 구현되지 않았습니다.", "개발 중",
-						JOptionPane.INFORMATION_MESSAGE);
+				// 게임 불러오기
+				loadSavedGame();
 			}
 		});
 		buttonPanel.add(btnContinue, gbc);
@@ -303,6 +305,85 @@ public class GameSelectionFrame extends JFrame {
 		panel.add(centerPanel, BorderLayout.CENTER);
 
 		return panel;
+	}
+	
+	/**
+	 * 새 게임 시작
+	 */
+	private void startNewGame() {
+		try {
+			// 세션 컨트롤러로 새 게임 세션 생성
+			SessionController sessionController = new SessionController();
+			int sessionId = sessionController.createSession(loggedInUser.getUserId());
+			
+			if (sessionId > 0) {
+				// 세션 생성 성공 - 게임 세션 객체 생성
+				Session gameSession = new Session();
+				gameSession.setSessionId(sessionId);
+				gameSession.setUserId(loggedInUser.getUserId());
+				gameSession.setLife(100);  // 초기 생명력
+				gameSession.setMoney(100); // 초기 자금
+				gameSession.setScore(0);   // 초기 점수
+				gameSession.setWave(1);    // 초기 웨이브
+				
+				// 현재 창의 상태 저장
+				boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+				Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+				
+				// 게임 룸 화면으로 이동
+				dispose();
+				GameRoomFrame gameRoom = new GameRoomFrame(loggedInUser, gameSession, currentBounds, currentMaximized);
+				gameRoom.setVisible(true);
+			} else {
+				// 세션 생성 실패
+				JOptionPane.showMessageDialog(this, "게임 세션 생성에 실패했습니다.", "오류", JOptionPane.ERROR_MESSAGE);
+			}
+		} catch (Exception ex) {
+			JOptionPane.showMessageDialog(this, "새 게임 시작 중 오류가 발생했습니다: " + ex.getMessage(), "오류",
+					JOptionPane.ERROR_MESSAGE);
+			ex.printStackTrace();
+		}
+	}
+	
+	/**
+	 * 저장된 게임 불러오기
+	 */
+	private void loadSavedGame() {
+		try {
+			// 세션 컨트롤러로 저장된 게임 목록 조회
+			SessionController sessionController = new SessionController();
+			java.util.List<Session> savedSessions = sessionController.getUserSessions(loggedInUser.getUserId());
+			
+			if (savedSessions != null && !savedSessions.isEmpty()) {
+				// 저장된 게임이 있음
+				// 여러 개인 경우 선택 가능한 대화 상자 표시 (현재는 최신 세션 하나만 불러옴)
+				Session lastSession = savedSessions.get(0);
+				
+				// 저장된 게임 세션 불러오기
+				Session loadedSession = sessionController.loadGameState(lastSession.getSessionId());
+				
+				if (loadedSession != null) {
+					// 현재 창의 상태 저장
+					boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+					Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+					
+					// 게임 룸 화면으로 이동
+					dispose();
+					GameRoomFrame gameRoom = new GameRoomFrame(loggedInUser, loadedSession, currentBounds, currentMaximized);
+					gameRoom.setVisible(true);
+				} else {
+					JOptionPane.showMessageDialog(this, "저장된 게임을 불러올 수 없습니다.", "오류", JOptionPane.ERROR_MESSAGE);
+				}
+			} else {
+				// 저장된 게임 없음
+				JOptionPane.showMessageDialog(this, "저장된 게임이 없습니다. 새 게임을 시작해주세요.", "알림", 
+						JOptionPane.INFORMATION_MESSAGE);
+			}
+		} catch (Exception ex) {
+			JOptionPane.showMessageDialog(this, "게임 불러오기 중 오류가 발생했습니다: " + ex.getMessage(), "오류",
+					JOptionPane.ERROR_MESSAGE);
+			ex.printStackTrace();
+		}
 	}
 
 	/**
