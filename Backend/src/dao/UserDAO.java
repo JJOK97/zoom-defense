@@ -16,6 +16,7 @@ public class UserDAO {
     private PreparedStatement pstmt;
     private ResultSet rs;
     
+    
     // DB 연결 가져오기
     private Connection getConnection() {
         return DBConnection.getInstance().getConnection();
@@ -87,4 +88,74 @@ public class UserDAO {
         }
         return isDuplicate;
     }
+    
+    /**
+     * 로그인 인증 메소드
+     * @param loginId 체크할 아이디
+     * @param password 체크할 비밀번호
+     * @return 로그인 성공 여부 (true: 성공, false: 실패)
+     */
+    public boolean validateLogin(String loginId, String password) {
+    	boolean validate = false;
+    	String sql = "SELECT * FROM USERS WHERE USER_LOGIN_ID = ? AND PASSWORD = ?";
+    	
+    	try {
+    		conn = getConnection();
+    		pstmt = conn.prepareStatement(sql);
+    		pstmt.setString(1, loginId);
+    		pstmt.setString(2, password);
+    		
+    		rs = pstmt.executeQuery();
+    		
+    		if(rs.next()) {
+    			validate = true;
+    		} else {
+    			System.out.println("다시 시도해주세요");
+    		}
+    		
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			close();
+		}
+    	return validate;
+    }
+    
+    /**
+     * 사용자 정보 조회
+     * @param getUserById 체크할 아이디
+     * @return 정보 조회 성공 여부 (true: 성공, false: 실패)
+     */
+    public boolean getUserById(int userId, String loginId, String nickname) {
+    	boolean UserBy = false;
+    	String sql = "SELECT USER_ID,USER_LOGIN_ID,NICKNAME FROM USERS";
+    	
+		try {
+			conn = getConnection();
+			pstmt = conn.prepareStatement(sql);
+			
+			rs = pstmt.executeQuery();
+			
+			if(rs.next()) {
+			System.out.println("=====사용자 목록=====");
+			System.out.println("UserID\tLoginID\t\tNickname");
+			do {
+				int userIdResult = rs.getInt("USER_ID");
+				String loginIdResult = rs.getString("USER_LOGIN_ID");
+		        String nicknameResult = rs.getString("NICKNAME");
+		        
+		        System.out.println(userIdResult + "\t" + loginIdResult + "\t" + nicknameResult);
+				} while(rs.next());
+				UserBy = true;
+			} else {
+				System.out.println("사용자 목록 출력을 실패했습니다. 다시 시도해 주세요!");
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}finally {
+			close();
+		}
+    	return UserBy;
+    }
+    
 } 

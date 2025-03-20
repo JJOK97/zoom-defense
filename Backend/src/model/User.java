@@ -9,6 +9,19 @@ public class User {
     private String password;   // 사용자 비밀번호
     private String nickname;   // 사용자 닉네임
     
+    // 사용자 정보 조회
+    public User(int userId, String loginId, String nickname) {
+    	this.userId = userId;
+    	this.loginId = loginId;
+    	this.nickname = nickname;
+    }
+    
+    // 로그인 여부 생성자
+    public User(String loginId, String password) {
+    	this.loginId = loginId;
+    	this.password = password;
+    }
+    
     // 기본 생성자
     public User() {
     }
