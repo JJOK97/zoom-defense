@@ -62,7 +62,7 @@ public class GameMapPanel extends JPanel {
 	private Point hoveredCell; // 마우스가 위치한 셀
 
 	// 게임 자원 정보
-	private int money = 100; // 보유 금액
+	private int money = 30; // 보유 금액
 	private int life = 100; // 남은 생명력
 
 	// 연결된 UI 컴포넌트

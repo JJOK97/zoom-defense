@@ -76,7 +76,7 @@ public class Session {
 	public Session(int userId) {
 		this.userId = userId;
 		this.life = 100;  // 기본값
-		this.money = 100; // 기본값
+		this.money = 30; // 기본값을 30으로 수정
 		this.score = 0;   // 기본값
 		this.wave = 1;    // 기본값
 		this.placedTowers = new ArrayList<>();

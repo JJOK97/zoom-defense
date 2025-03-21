@@ -110,6 +110,9 @@ public class GameRoomFrame extends JFrame {
         setTitle("ZOOM Defense - " + loggedInUser.getNickname() + "님의 게임");
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         
+        // 타워 비용 초기화
+        service.TowerServicelmpl.resetTowerCost();
+        
         // 창 닫기 버튼 처리
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
