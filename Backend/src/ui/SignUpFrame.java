@@ -151,13 +151,18 @@ public class SignUpFrame extends JFrame {
             btnGoBack.setFont(UIConstants.getScaledPixelFont(width / 20));
         }
         
-        // InputBox 크기 조정 - 화면 비율에 맞게 조정
+        // InputBox 크기 조정 - 화면 비율에 맞게 조정하되 최대 크기 제한
         if (txtRegisterId != null && txtRegisterPassword != null && 
             txtConfirmPassword != null && txtNickname != null) {
             
             // 화면 너비에 비례하는 입력 필드 크기
-            int textFieldWidth = Math.max(250, width / 4);
-            int textFieldHeight = Math.max(35, height / 25);
+            int textFieldWidth = Math.max(200, width / 5);  // 비율 조정 (1/4 -> 1/5)
+            // 최대 너비 제한
+            textFieldWidth = Math.min(textFieldWidth, 350);
+            
+            int textFieldHeight = Math.max(30, height / 25);
+            // 최대 높이 제한
+            textFieldHeight = Math.min(textFieldHeight, 45);
             
             Dimension textFieldSize = new Dimension(textFieldWidth, textFieldHeight);
             txtRegisterId.setPreferredSize(textFieldSize);
@@ -165,8 +170,10 @@ public class SignUpFrame extends JFrame {
             txtConfirmPassword.setPreferredSize(textFieldSize);
             txtNickname.setPreferredSize(textFieldSize);
             
-            // 폰트 크기도 화면 크기에 맞게 조정
+            // 폰트 크기도 화면 크기에 맞게 조정하되 최대값 제한
             float fontSize = Math.max(12f, width / 80f);
+            fontSize = Math.min(fontSize, 18f); // 최대 폰트 크기 제한
+            
             txtRegisterId.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
             txtRegisterPassword.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
             txtConfirmPassword.setFont(UIConstants.getPixelFont().deriveFont(fontSize));

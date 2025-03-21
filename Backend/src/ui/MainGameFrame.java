@@ -69,7 +69,13 @@ public class MainGameFrame extends JFrame {
 	 * @param maximized 이전 창의 최대화 상태
 	 */
 	public MainGameFrame(Rectangle bounds, boolean maximized) {
-
+		// 시스템 DPI 스케일링 무시 설정 (Java 9 이상)
+		try {
+			System.setProperty("sun.java2d.uiScale", "1.0");
+		} catch (Exception e) {
+			// 속성 설정 오류는 무시
+		}
+		
 		setTitle("ZOOM Defense");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -126,7 +132,13 @@ public class MainGameFrame extends JFrame {
 		// 버튼 크기 조정 - 화면 비율에 맞게 조정
 		if (btnLogin != null && btnRegister != null) {
 			int buttonWidth = Math.max(150, width / 6);
+			// 최대 버튼 너비 제한
+			buttonWidth = Math.min(buttonWidth, 300);
+			
 			int buttonHeight = Math.max(40, height / 15);
+			// 최대 버튼 높이 제한
+			buttonHeight = Math.min(buttonHeight, 60);
+			
 			btnLogin.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
 			btnRegister.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
 			
@@ -135,18 +147,30 @@ public class MainGameFrame extends JFrame {
 			btnRegister.setFont(UIConstants.getScaledPixelFont(width / 20));
 		}
 		
-		// 입력 필드 크기 조정 - 화면 비율에 맞게
+		// 입력 필드 크기 조정 - 고정된 최대 크기 설정
 		if (txtLoginId != null && txtPassword != null) {
-			// 화면 너비에 비례하는 입력 필드 크기
-			int textFieldWidth = Math.max(200, width / 4);  // 비율 조정
-			int textFieldHeight = Math.max(30, height / 25); // 높이 비율 조정
+			// 화면 크기와 상관없이 고정된 최대 크기 사용
+			int textFieldWidth = 300; // 고정 크기
+			int textFieldHeight = 40; // 고정 크기
+			
+			// 화면이 작은 경우만 비율 적용
+			if (getWidth() < 1280) {
+				textFieldWidth = Math.max(200, getWidth() / 5);
+				textFieldHeight = Math.max(30, getHeight() / 25);
+			}
 			
 			Dimension textFieldSize = new Dimension(textFieldWidth, textFieldHeight);
 			txtLoginId.setPreferredSize(textFieldSize);
 			txtPassword.setPreferredSize(textFieldSize);
 			
-			// 폰트 크기도 화면 크기에 맞게 조정
-			float fontSize = Math.max(12f, width / 80f);
+			// 폰트 크기도 고정
+			float fontSize = 16f; // 고정 폰트 크기
+			
+			// 화면이 작은 경우 비율에 맞게 축소
+			if (width < 1280) {
+				fontSize = Math.max(12f, width / 80f);
+			}
+			
 			txtLoginId.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
 			txtPassword.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
 		}
@@ -167,6 +191,7 @@ public class MainGameFrame extends JFrame {
 		if (component instanceof JLabel && !(component instanceof PixelLabel)) {
 			JLabel label = (JLabel) component;
 			float fontSize = Math.max(12f, width / 80f);
+			fontSize = Math.min(fontSize, 18f); // 최대 폰트 크기 제한
 			label.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
 		} else if (component instanceof Container) {
 			for (Component child : ((Container) component).getComponents()) {
@@ -229,8 +254,15 @@ public class MainGameFrame extends JFrame {
 		loginPanel.add(lblId, gbc);
 
 		// 아이디 입력 필드 - 초기 크기 설정
-		int textFieldWidth = Math.max(200, getWidth() / 4);
-		int textFieldHeight = Math.max(30, getHeight() / 25);
+		int textFieldWidth = 300; // 고정 크기
+		int textFieldHeight = 40; // 고정 크기
+
+		// 화면이 작은 경우만 비율 적용
+		if (getWidth() < 1280) {
+			textFieldWidth = Math.max(200, getWidth() / 5);
+			textFieldHeight = Math.max(30, getHeight() / 25);
+		}
+
 		txtLoginId = new PixelTextField(30, UIConstants.getPixelFont());
 		txtLoginId.setPreferredSize(new Dimension(textFieldWidth, textFieldHeight));
 		gbc.gridx = 1;
@@ -371,6 +403,17 @@ public class MainGameFrame extends JFrame {
 	 * 애플리케이션 실행
 	 */
 	public static void main(String[] args) {
+		// DPI 스케일링 처리
+		try {
+			// Java 9 이상에서 사용
+			System.setProperty("sun.java2d.uiScale", "1.0");
+			
+			// Java 8에서 사용
+			System.setProperty("sun.java2d.dpiaware", "true");
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 		SwingUtilities.invokeLater(new Runnable() {
 			@Override
 			public void run() {

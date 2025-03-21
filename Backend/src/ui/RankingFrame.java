@@ -77,6 +77,13 @@ public class RankingFrame extends JFrame {
 		this.rankingController = new RankingController();
 		this.userController = new UserController();
 
+		// DPI 스케일링 무시 설정 추가
+		try {
+			System.setProperty("sun.java2d.uiScale", "1.0");
+		} catch (Exception e) {
+			// 속성 설정 오류는 무시
+		}
+
 		setTitle("ZOOM Defense - 랭킹 - " + user.getNickname() + "님");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -116,6 +123,13 @@ public class RankingFrame extends JFrame {
 		this.loggedInUser = user;
 		this.rankingController = new RankingController();
 		this.userController = new UserController();
+		
+		// DPI 스케일링 무시 설정 추가
+		try {
+			System.setProperty("sun.java2d.uiScale", "1.0");
+		} catch (Exception e) {
+			// 속성 설정 오류는 무시
+		}
 
 		setTitle("ZOOM Defense - 랭킹 - " + user.getNickname() + "님");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -173,43 +187,91 @@ public class RankingFrame extends JFrame {
 			lblTitle.setFont(UIConstants.getScaledTitleFont(width));
 		}
 
-		// 테이블 크기 조정
-		if (topRankingTable != null) {
-			int tableWidth = Math.max(400, width / 2);
-			int tableHeight = Math.max(300, height / 3);
-			topRankingTable.setPreferredScrollableViewportSize(new Dimension(tableWidth, tableHeight));
+		// 테이블 크기 조정 - 고정 크기 적용
+		if (rankingTable != null) {
+			// 화면 크기와 상관없이 고정된 최대 크기 사용
+			int tableWidth = 400; // 고정 크기
+			int tableHeight = 400; // 고정 크기
+			
+			// 화면이 작은 경우 비율에 맞게 축소
+			if (width < 1280) {
+				tableWidth = Math.max(350, width / 3);
+				tableHeight = Math.max(300, height / 3);
+			}
+			
+			JScrollPane scrollPane = (JScrollPane) rankingTable.getParent().getParent();
+			scrollPane.setPreferredSize(new Dimension(tableWidth, tableHeight));
 		}
 
-		if (userRankingTable != null) {
-			int tableWidth = Math.max(400, width / 2);
-			int tableHeight = Math.max(200, height / 4);
-			userRankingTable.setPreferredScrollableViewportSize(new Dimension(tableWidth, tableHeight));
-		}
-
-		// 버튼 크기 조정
+		// 버튼 크기 조정 - 고정 크기 적용
 		if (btnGoBack != null) {
-			int buttonWidth = Math.max(150, width / 8);
-			int buttonHeight = Math.max(40, height / 20);
+			int buttonWidth = 120; // 고정 크기
+			int buttonHeight = 40; // 고정 크기
+			
+			// 화면이 작은 경우 비율에 맞게 축소
+			if (width < 1280) {
+				buttonWidth = Math.max(100, width / 12);
+				buttonHeight = Math.max(35, height / 25);
+			}
+			
 			btnGoBack.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
 		}
 
-		if (btnSearch != null) {
-			int buttonWidth = Math.max(100, width / 12);
-			int buttonHeight = Math.max(30, height / 25);
-			btnSearch.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
+		if (btnSearch != null && txtUserSearch != null) {
+			// 검색 버튼 크기 고정
+			int searchButtonWidth = 100; // 고정 크기
+			int searchButtonHeight = 30; // 고정 크기
+			
+			// 화면이 작은 경우 비율에 맞게 축소
+			if (width < 1280) {
+				searchButtonWidth = Math.max(80, width / 15);
+				searchButtonHeight = Math.max(25, height / 30);
+			}
+			
+			btnSearch.setPreferredSize(new Dimension(searchButtonWidth, searchButtonHeight));
+			
+			// 검색 필드 크기 제한
+			int searchFieldWidth = 250; // 고정 크기
+			int searchFieldHeight = 30; // 고정 크기
+			
+			// 화면이 작은 경우 비율에 맞게 축소
+			if (width < 1280) {
+				searchFieldWidth = Math.max(200, width / 6);
+				searchFieldHeight = Math.max(25, height / 30);
+			}
+			
+			txtUserSearch.setPreferredSize(new Dimension(searchFieldWidth, searchFieldHeight));
+		}
+		
+		// btnBackToTop 크기 조정
+		if (btnBackToTop != null) {
+			int topButtonWidth = 85; // 고정 크기
+			int topButtonHeight = 28; // 고정 크기
+			
+			// 화면이 작은 경우 비율에 맞게 축소
+			if (width < 1280) {
+				topButtonWidth = Math.max(70, width / 16);
+				topButtonHeight = Math.max(25, height / 35);
+			}
+			
+			btnBackToTop.setPreferredSize(new Dimension(topButtonWidth, topButtonHeight));
 		}
 
-		// 테이블 크기 조정 후 행 높이도 함께 조정
+		// 테이블 헤더 및 행 폰트 크기 조정
 		if (rankingTable != null) {
-			// 테이블 가로 길이 줄임
-			int tableWidth = Math.max(350, width / 3);
-			int tableHeight = Math.max(300, height / 3);
-			JScrollPane scrollPane = (JScrollPane) rankingTable.getParent().getParent();
-			scrollPane.setPreferredSize(new Dimension(tableWidth, tableHeight));
+			float fontSize = 16f; // 기본 폰트 크기
 			
-			// 행 높이 조정
-			adjustRowHeight();
+			// 화면이 작은 경우 비율에 맞게 축소
+			if (width < 1280) {
+				fontSize = Math.max(12f, width / 80f);
+			}
+			
+			rankingTable.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
+			rankingTable.getTableHeader().setFont(UIConstants.getPixelFont().deriveFont(fontSize + 2f));
 		}
+
+		// 행 높이 조정
+		adjustRowHeight();
 
 		revalidate();
 		repaint();
@@ -459,16 +521,29 @@ public class RankingFrame extends JFrame {
 		rankingTable.getColumnModel().getColumn(2).setCellRenderer(scoreRenderer);
 		rankingTable.getColumnModel().getColumn(3).setCellRenderer(dateRenderer);
 
-		// 컬럼 너비 조정 - 비율에 맞게 설정하고 전체 가로 길이 줄임
+		// 컬럼 너비 조정 - 비율에 맞게 설정
 		rankingTable.getColumnModel().getColumn(0).setPreferredWidth(60);  // RANK (15%)
-		rankingTable.getColumnModel().getColumn(1).setPreferredWidth(200); // PLAYER (50%)
-		rankingTable.getColumnModel().getColumn(2).setPreferredWidth(100); // SCORE (25%)
-		rankingTable.getColumnModel().getColumn(3).setPreferredWidth(80);  // DATE (보이지 않음)
+		rankingTable.getColumnModel().getColumn(1).setPreferredWidth(180); // PLAYER (45%)
+		rankingTable.getColumnModel().getColumn(2).setPreferredWidth(80);  // SCORE (20%)
+		rankingTable.getColumnModel().getColumn(3).setPreferredWidth(80);  // DATE (20%)
 
-		// 스크롤 패널에 테이블 추가 (가로 길이 줄임)
+		// 스크롤 패널에 테이블 추가 (고정 크기 설정)
 		JScrollPane scrollPane = new JScrollPane(rankingTable);
-		// 너비를 450으로 줄이고 높이는 450 유지
-		scrollPane.setPreferredSize(new Dimension(450, 450));
+		
+		// 초기 크기 설정 - 고정 크기 + 화면 크기 대응
+		int width = getWidth();
+		int height = getHeight();
+		
+		int tableWidth = 400; // 고정 크기
+		int tableHeight = 400; // 고정 크기
+		
+		// 화면이 작은 경우 비율에 맞게 축소
+		if (width < 1280) {
+			tableWidth = Math.max(350, width / 3);
+			tableHeight = Math.max(300, height / 3);
+		}
+		
+		scrollPane.setPreferredSize(new Dimension(tableWidth, tableHeight));
 		scrollPane.setBorder(new LineBorder(new Color(60, 60, 100), 2, true));
 		scrollPane.getViewport().setBackground(new Color(20, 20, 30));
 
@@ -495,7 +570,7 @@ public class RankingFrame extends JFrame {
 	}
 
 	/**
-	 * 테이블 행 높이를 동적으로 조정하는 메서드
+	 * 테이블 행 높이를 동적으로 조정하는 메서드 - 개선
 	 */
 	private void adjustRowHeight() {
 		if (rankingTable == null)
@@ -507,15 +582,16 @@ public class RankingFrame extends JFrame {
 		JScrollPane scrollPane = (JScrollPane) rankingTable.getParent().getParent();
 		int viewportHeight = scrollPane.getViewport().getHeight();
 		
-		// 테이블의 전체 높이를 계산 (헤더 포함)
+		// 테이블의 전체 높이를 계산 (헤더 제외)
 		int tableHeight = viewportHeight;
 		
-		// 각 행의 높이를 테이블 높이의 10등분으로 설정 (헤더 포함)
-		int rowHeight = Math.max(20, tableHeight / (totalRowCount + 1)); // +1은 헤더를 위한 공간
+		// 각 행의 높이를 테이블 높이의 10등분으로 설정
+		int rowHeight = Math.max(25, tableHeight / totalRowCount); // 최소 높이 제한
 		
 		// 헤더 높이도 설정
 		rankingTable.getTableHeader().setPreferredSize(new Dimension(
-				rankingTable.getTableHeader().getWidth(), rowHeight));
+				rankingTable.getTableHeader().getWidth(), 
+				rowHeight)); // 헤더도 같은 높이로
 		
 		// 모든 행의 높이를 균일하게 설정
 		rankingTable.setRowHeight(rowHeight);
@@ -525,43 +601,62 @@ public class RankingFrame extends JFrame {
 	}
 
 	private JPanel createUserSearchPanel() {
-		// 더 넓은 영역을 사용하도록 수정
-		JPanel panel = new JPanel(new GridBagLayout()); // GridBagLayout 사용
+		JPanel panel = new JPanel(new GridBagLayout());
 		panel.setOpaque(false);
-		panel.setBorder(new EmptyBorder(10, 0, 20, 0)); // 여백 증가
+		panel.setBorder(new EmptyBorder(10, 0, 15, 0)); // 여백 줄임
 		
-		// GridBagConstraints 설정
 		GridBagConstraints gbc = new GridBagConstraints();
-		gbc.insets = new Insets(0, 5, 0, 10); // 컴포넌트 간 간격
+		gbc.insets = new Insets(0, 5, 0, 5); // 간격 줄임
 		
-		// 레이블 추가
+		// 레이블
 		PixelLabel lblSearch = new PixelLabel("SEARCH PLAYER:", SwingConstants.RIGHT);
 		lblSearch.setFont(UIConstants.getPixelFont().deriveFont(16f));
 		lblSearch.setForeground(new Color(200, 200, 255));
 		gbc.gridx = 0;
 		gbc.gridy = 0;
-		gbc.weightx = 0.0; // 고정 크기
+		gbc.weightx = 0.0;
 		gbc.fill = GridBagConstraints.NONE;
 		gbc.anchor = GridBagConstraints.EAST;
 		panel.add(lblSearch, gbc);
 		
-		// 텍스트 필드 추가 - 더 넓게
+		// 검색 필드 - 고정 크기 적용
+		int width = getWidth();
+		int height = getHeight();
+		
+		int searchFieldWidth = 250; // 고정 크기
+		int searchFieldHeight = 30; // 고정 크기
+		
+		// 화면이 작은 경우 비율에 맞게 축소
+		if (width < 1280) {
+			searchFieldWidth = Math.max(200, width / 6);
+			searchFieldHeight = Math.max(25, height / 30);
+		}
+		
 		txtUserSearch = new PixelTextField(20, UIConstants.getPixelFont());
-		txtUserSearch.setPreferredSize(new Dimension(400, 30)); // 크기 증가
-		txtUserSearch.setMinimumSize(new Dimension(300, 30)); // 최소 크기 설정
+		txtUserSearch.setPreferredSize(new Dimension(searchFieldWidth, searchFieldHeight));
+		txtUserSearch.setMinimumSize(new Dimension(Math.max(150, width / 8), searchFieldHeight)); // 최소 크기 추가
 		txtUserSearch.setBackground(new Color(30, 30, 40));
 		txtUserSearch.setForeground(new Color(220, 220, 220));
 		txtUserSearch.setBorder(new LineBorder(new Color(60, 60, 100), 2));
 		txtUserSearch.setFont(UIConstants.getPixelFont().deriveFont(14f));
 		
 		gbc.gridx = 1;
-		gbc.weightx = 1.0; // 가용 공간을 모두 사용
-		gbc.fill = GridBagConstraints.HORIZONTAL; // 가로로 확장
+		gbc.weightx = 0.0; // 가중치 제거하여 고정 크기 유지
+		gbc.fill = GridBagConstraints.NONE; // 채우지 않음
 		panel.add(txtUserSearch, gbc);
 		
-		// 검색 버튼 추가
+		// 검색 버튼 - 고정 크기 적용
+		int searchButtonWidth = 100; // 고정 크기
+		int searchButtonHeight = 30; // 고정 크기
+		
+		// 화면이 작은 경우 비율에 맞게 축소
+		if (width < 1280) {
+			searchButtonWidth = Math.max(80, width / 15);
+			searchButtonHeight = Math.max(25, height / 30);
+		}
+		
 		btnSearch = new PixelButton("SEARCH", UIConstants.getPixelFont());
-		btnSearch.setPreferredSize(new Dimension(100, 30));
+		btnSearch.setPreferredSize(new Dimension(searchButtonWidth, searchButtonHeight));
 		btnSearch.setForeground(new Color(230, 230, 255));
 		btnSearch.setBackground(new Color(40, 40, 100));
 		btnSearch.setBorderColor(new Color(100, 100, 200));
@@ -574,7 +669,7 @@ public class RankingFrame extends JFrame {
 		});
 		
 		gbc.gridx = 2;
-		gbc.weightx = 0.0; // 고정 크기
+		gbc.weightx = 0.0;
 		gbc.fill = GridBagConstraints.NONE;
 		gbc.anchor = GridBagConstraints.WEST;
 		panel.add(btnSearch, gbc);
@@ -627,7 +722,7 @@ public class RankingFrame extends JFrame {
 	}
 
 	/**
-	 * 상위 10위 랭킹 데이터 로드
+	 * 상위 10위 랭킹 데이터 로드 - 테이블 설정 개선
 	 */
 	private void loadTopRankings() {
 		// 상위 랭킹 모드로 변경
@@ -666,6 +761,12 @@ public class RankingFrame extends JFrame {
 			rankingTable.getColumnModel().getColumn(3).setMinWidth(0);
 			rankingTable.getColumnModel().getColumn(3).setMaxWidth(0);
 			rankingTable.getColumnModel().getColumn(3).setWidth(0);
+			rankingTable.getColumnModel().getColumn(3).setPreferredWidth(0); // 선호 너비도 설정
+			
+			// 다른 컬럼 조정
+			rankingTable.getColumnModel().getColumn(0).setPreferredWidth(60);  // RANK (15%)
+			rankingTable.getColumnModel().getColumn(1).setPreferredWidth(220); // PLAYER (55%)
+			rankingTable.getColumnModel().getColumn(2).setPreferredWidth(120); // SCORE (30%)
 		}
 
 		// 헤더 업데이트
@@ -697,7 +798,7 @@ public class RankingFrame extends JFrame {
 	}
 
 	/**
-	 * 특정 사용자의 랭킹 데이터 로드
+	 * 특정 사용자의 랭킹 데이터 로드 - 테이블 설정 개선
 	 */
 	private void loadUserRankings(int userId, String searchName) {
 		// 사용자 검색 모드로 변경
@@ -734,9 +835,14 @@ public class RankingFrame extends JFrame {
 
 		// 날짜 컬럼 표시 (검색 결과에서는 날짜 표시)
 		if (rankingTable.getColumnCount() >= 4) {
-			rankingTable.getColumnModel().getColumn(3).setMinWidth(120);
-			rankingTable.getColumnModel().getColumn(3).setMaxWidth(120);
-			rankingTable.getColumnModel().getColumn(3).setPreferredWidth(120);
+			rankingTable.getColumnModel().getColumn(3).setMinWidth(80);
+			rankingTable.getColumnModel().getColumn(3).setMaxWidth(80);
+			rankingTable.getColumnModel().getColumn(3).setPreferredWidth(80);
+			
+			// 다른 컬럼 너비 조정
+			rankingTable.getColumnModel().getColumn(0).setPreferredWidth(40);  // NO (10%)
+			rankingTable.getColumnModel().getColumn(1).setPreferredWidth(180); // PLAYER (45%)
+			rankingTable.getColumnModel().getColumn(2).setPreferredWidth(100); // SCORE (25%)
 		}
 
 		// 헤더 업데이트
@@ -765,11 +871,22 @@ public class RankingFrame extends JFrame {
 	@Override
 	public void setVisible(boolean visible) {
 		if (visible) {
+			// DPI 설정 다시 한번 확인
+			try {
+				System.setProperty("sun.java2d.uiScale", "1.0");
+				System.setProperty("sun.java2d.dpiaware", "true");
+			} catch (Exception e) {
+				// 무시
+			}
+			
 			// 화면이 표시될 때 상위 랭킹 로드
 			loadTopRankings();
 			
 			// 약간의 딜레이 후 행 높이 조정 (컴포넌트가 완전히 배치된 후)
-			Timer adjustTimer = new Timer(100, e -> adjustRowHeight());
+			Timer adjustTimer = new Timer(100, e -> {
+				adjustComponentSizes(); // 컴포넌트 크기도 조정
+				adjustRowHeight();     // 행 높이 조정
+			});
 			adjustTimer.setRepeats(false);
 			adjustTimer.start();
 		}
