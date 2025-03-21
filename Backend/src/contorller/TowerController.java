@@ -32,7 +32,7 @@ public class TowerController {
 	}
 
 	public Tower getSecondTower() {
-		return towerService.getFirstTower();
+		return towerService.getSecondTower();
 	}
 
 	public Tower getThirdTower() {
