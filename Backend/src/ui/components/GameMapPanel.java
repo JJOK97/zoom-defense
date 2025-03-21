@@ -1858,21 +1858,13 @@ public class GameMapPanel extends JPanel {
             g2d.setColor(new Color(0, 0, 0, 150));
             g2d.fillRect(0, 0, width, height);
             
-            // 웨이브 완료 텍스트
-            g2d.setColor(Color.WHITE);
-            g2d.setFont(new Font("Arial", Font.BOLD, 30));
-            String completeText = "웨이브 " + currentWave + " 완료!";
-            FontMetrics metrics = g2d.getFontMetrics();
-            int textWidth = metrics.stringWidth(completeText);
-            g2d.drawString(completeText, (width - textWidth) / 2, height / 2 - 50);
-            
-            // 카운트다운 숫자
+            // 카운트다운 숫자만 중앙에 표시
             g2d.setColor(Color.YELLOW);
-            g2d.setFont(new Font("Arial", Font.BOLD, 72));
+            g2d.setFont(new Font("Arial", Font.BOLD, 100)); // 폰트 크기를 키움
             String countText = String.valueOf(countdown);
-            metrics = g2d.getFontMetrics();
-            textWidth = metrics.stringWidth(countText);
-            g2d.drawString(countText, (width - textWidth) / 2, height / 2 + 50);
+            FontMetrics metrics = g2d.getFontMetrics();
+            int textWidth = metrics.stringWidth(countText);
+            g2d.drawString(countText, (width - textWidth) / 2, height / 2 + 30);
         }
     }
 } 
