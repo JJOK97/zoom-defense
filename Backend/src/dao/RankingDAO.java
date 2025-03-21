@@ -48,10 +48,12 @@ public class RankingDAO {
 			int result = pstmt.executeUpdate();
 			if (result > 0) {
 				success = true;
+				conn.commit();
 				System.out.println("랭킹등록 성공!");
 			}
 		} catch (SQLException e) {
-			System.out.println("랭킹등록 실패: ");
+			System.out.println("랭킹등록 실패: " + e.getMessage());
+			e.printStackTrace();
 		} finally {
 			close();
 		}
@@ -63,8 +65,11 @@ public class RankingDAO {
 
 	public ArrayList<Ranking> getTopRankings() {
 		ArrayList<Ranking> resultList = new ArrayList<>();
-		String sql = "SELECT *" + "FROM (SELECT USER_ID, SCORE FROM RANKINGS ORDER BY SCORE DESC)"
-				+ "WHERE ROWNUM <= 10";
+		String sql = "SELECT * FROM (" +
+				"SELECT RANKING_ID, USER_ID, SCORE, RECORD_DATE " +
+				"FROM RANKINGS " +
+				"ORDER BY SCORE DESC" +
+				") WHERE ROWNUM <= 10";
 
 		try {
 			conn = getConnection();
@@ -75,17 +80,18 @@ public class RankingDAO {
 			while (rs.next()) {
 				int userId = rs.getInt("USER_ID");
 				int score = rs.getInt("SCORE");
-				resultList.add(new Ranking(userId, score));
-
+				int rankingId = rs.getInt("RANKING_ID");
+				Date recordDate = rs.getDate("RECORD_DATE");
+				resultList.add(new Ranking(rankingId, userId, score, recordDate));
 			}
 
 		} catch (SQLException e) {
-			System.out.println("상위 랭킹 조회 실패: ");
+			System.out.println("상위 랭킹 조회 실패: " + e.getMessage());
+			e.printStackTrace();
 		} finally {
 			close();
 		}
 		return resultList;
-
 	}
 
 	// 특정유저의 랭킹 기록조회
@@ -109,7 +115,8 @@ public class RankingDAO {
 			}
 
 		} catch (SQLException e) {
-			System.out.println("랭킹 기록 조회 실패: ");
+			System.out.println("랭킹 기록 조회 실패: " + e.getMessage());
+			e.printStackTrace();
 		} finally {
 			close();
 		}

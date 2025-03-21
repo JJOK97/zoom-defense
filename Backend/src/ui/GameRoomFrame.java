@@ -35,6 +35,7 @@ import ui.components.WaveInfoPanel;
 import ui.components.common.PixelBackgroundPanel;
 import ui.components.common.PixelButton;
 import ui.components.common.UIConstants;
+import contorller.RankingController;
 
 /**
  * ZOOM Defense 게임 룸 화면 구현 클래스
@@ -540,6 +541,15 @@ public class GameRoomFrame extends JFrame {
             gameTimer.stop();
         }
         
+        // 게임 점수 계산 및 랭킹 등록
+        int finalScore = gameMapPanel.getScore();
+        gameSession.setScore(finalScore);
+        
+        // 랭킹 등록
+        RankingController rankingController = new RankingController();
+        boolean rankingAdded = rankingController.addRanking(loggedInUser.getUserId(), finalScore);
+        System.out.println("랭킹 등록 결과: " + (rankingAdded ? "성공" : "실패"));
+        
         // 게임 선택 화면으로 이동
         dispose();
         
@@ -563,8 +573,14 @@ public class GameRoomFrame extends JFrame {
         
         // 게임 정보 저장
         int finalWave = waveInfoPanel.getCurrentWave();
-        gameSession.setScore(finalWave * 100); // 점수 계산
+        int finalScore = finalWave * 100 + gameMapPanel.getScore(); // 웨이브 + 게임맵 점수 합산
+        gameSession.setScore(finalScore);
         saveGame(); // 게임 상태 저장
+        
+        // 랭킹 등록
+        RankingController rankingController = new RankingController();
+        boolean rankingAdded = rankingController.addRanking(loggedInUser.getUserId(), finalScore);
+        System.out.println("랭킹 등록 결과: " + (rankingAdded ? "성공" : "실패"));
         
         // 게임 선택 화면으로 이동
         dispose();

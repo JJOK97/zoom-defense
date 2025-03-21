@@ -369,56 +369,31 @@ public class GameMapPanel extends JPanel {
 	 * 적 업데이트 (이동 및 생명력 감소)
 	 */
 	private void updateEnemies() {
-		Iterator<GameEnemy> it = activeEnemies.iterator();
+		// 각 적 업데이트
+		for (int i = activeEnemies.size() - 1; i >= 0; i--) {
+			GameEnemy enemy = activeEnemies.get(i);
 
-		// 적이 없을 경우 로그
-		if (!activeEnemies.iterator().hasNext()) {
-			return; // 적이 없으면 처리 필요 없음
-		}
-
-		// 디버깅을 위한 주기적 로그 (매 초마다 모든 적의 상태를 확인)
-		long currentTime = System.currentTimeMillis();
-		if (currentTime % 1000 < 20) { // 약 20ms 이내일 때만 로그 출력하여 초당 한 번만
-			System.out.println("현재 활성 적 수: " + activeEnemies.size());
-			// 모든 적이 움직이고 있는지 확인
-			int i = 0;
-			for (GameEnemy enemy : activeEnemies) {
-				// 10개까지만 로그
-				if (i < 10) {
-					System.out.println("적 #" + i + ": ID=" + enemy.getEnemyId() + ", 위치=(" + enemy.getX() + ","
-							+ enemy.getY() + "), 경로인덱스=" + enemy.getPathIndex() + ", 체력=" + enemy.getHealth() + ", 속도="
-							+ enemy.getSpeed());
-				}
-				i++;
-			}
-		}
-
-		while (it.hasNext()) {
-			GameEnemy enemy = it.next();
-
-			// 적 이동
-			moveEnemy(enemy);
-
-			// 목적지 도달 체크
 			if (enemy.hasReachedEnd(pathPoints)) {
-				// 생명력 감소
+				// 적이 끝점에 도달한 경우 생명력 감소
 				life -= enemy.getDamage();
-
-				// 적 제거
-				it.remove();
-				System.out.println("적이 목적지에 도달하여 제거됨: " + enemy.getEnemyId() + ", 남은 생명력: " + life);
-
-				// UI 업데이트 - 자원 패널에 반영될 수 있도록
-
-				// 게임 오버 체크
+				activeEnemies.remove(i);
+				
+				// 생명력 0 이하시 게임 오버
 				if (life <= 0) {
-					// 생명력이 0 이하로 떨어지면 게임 오버
-					life = 0; // 음수 방지
+					life = 0;
+					// 게임 오버 전 최종 점수 계산 (현재 웨이브 * 100 + 처치한 적의 수 * 10)
+					score = (currentWave * 100) + (killedEnemies * 10);
 					gameOver();
 					return;
 				}
+				
+				continue;
 			}
+
+			moveEnemy(enemy);
 		}
+
+		repaint();
 	}
 
 	/**
@@ -1524,7 +1499,7 @@ public class GameMapPanel extends JPanel {
 
 			GameEnemy enemy = new GameEnemy(enemyModel.getEnemyId(), enemyModel.getEnemyName(),
 					enemyModel.getHealth() * healthMultiplier, speed, // 유효한 속도 값 사용
-					enemyModel.getReward(), enemyModel.getDamage());
+					enemyModel.getReward(), enemyModel.getDamage());  // DB에서 가져온 데미지 값 사용
 
 			// 시작 위치 설정 (경로의 첫 지점)
 			if (!pathPoints.isEmpty()) {
@@ -1578,7 +1553,7 @@ public class GameMapPanel extends JPanel {
 			this.maxHealth = health;
 			this.speed = speed;
 			this.reward = reward;
-			this.damage = damage;
+			this.damage = damage;  // DB에서 가져온 데미지 값 사용
 			this.pathIndex = 0;
 			this.reachedEnd = false;
 			this.size = GRID_SIZE;
