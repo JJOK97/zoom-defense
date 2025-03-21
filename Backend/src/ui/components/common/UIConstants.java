@@ -63,49 +63,34 @@ public class UIConstants {
             titleFont = new Font("맑은 고딕", Font.BOLD, 40);
         }
         
-        // 다양한 경로에서 폰트 파일 탐색
-        String[] basePaths = {"", "src/", "Backend/src/", "../"};
-        String[] fontDirs = {"ui/fonts/", "fonts/", "resources/fonts/"};
-        
-        // 영문용 폰트 로드 시도
-        boolean englishFontLoaded = false;
-        for (String basePath : basePaths) {
-            for (String fontDir : fontDirs) {
-                String path = basePath + fontDir + "pixel.ttf";
-                File fontFile = new File(path);
-                if (fontFile.exists()) {
-                    try {
-                        Font loadedFont = Font.createFont(Font.TRUETYPE_FONT, fontFile);
-                        titleFont = loadedFont.deriveFont(Font.BOLD, 50f);
-                        englishFontLoaded = true;
-                        break;
-                    } catch (FontFormatException | IOException e) {
-                        e.printStackTrace();
-                    }
+        // 클래스패스에서 폰트 로드 시도
+        try {
+            // 영문 폰트 로드
+            try {
+                java.io.InputStream is = UIConstants.class.getResourceAsStream("/ui/fonts/pixel.ttf");
+                if (is != null) {
+                    Font loadedFont = Font.createFont(Font.TRUETYPE_FONT, is);
+                    titleFont = loadedFont.deriveFont(Font.BOLD, 50f);
+                    is.close();
                 }
+            } catch (Exception e) {
+                System.out.println("영문 폰트 로드 실패: " + e.getMessage());
             }
-            if (englishFontLoaded) break;
-        }
-        
-        // 한글용 폰트 로드 시도
-        boolean koreanFontLoaded = false;
-        for (String basePath : basePaths) {
-            for (String fontDir : fontDirs) {
-                String path = basePath + fontDir + "pixel_kr.ttf";
-                File fontFile = new File(path);
-                if (fontFile.exists()) {
-                    try {
-                        Font loadedFont = Font.createFont(Font.TRUETYPE_FONT, fontFile);
-                        pixelFont = loadedFont.deriveFont(Font.BOLD, 20f);
-                        smallPixelFont = loadedFont.deriveFont(Font.PLAIN, 20f);
-                        koreanFontLoaded = true;
-                        break;
-                    } catch (FontFormatException | IOException e) {
-                        e.printStackTrace();
-                    }
+            
+            // 한글 폰트 로드
+            try {
+                java.io.InputStream is = UIConstants.class.getResourceAsStream("/ui/fonts/pixel_kr.ttf");
+                if (is != null) {
+                    Font loadedFont = Font.createFont(Font.TRUETYPE_FONT, is);
+                    pixelFont = loadedFont.deriveFont(Font.BOLD, 20f);
+                    smallPixelFont = loadedFont.deriveFont(Font.PLAIN, 20f);
+                    is.close();
                 }
+            } catch (Exception e) {
+                System.out.println("한글 폰트 로드 실패: " + e.getMessage());
             }
-            if (koreanFontLoaded) break;
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
     
