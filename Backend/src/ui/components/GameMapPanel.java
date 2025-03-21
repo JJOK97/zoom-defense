@@ -364,6 +364,30 @@ public class GameMapPanel extends JPanel {
     private void updateEnemies() {
         Iterator<GameEnemy> it = activeEnemies.iterator();
         
+        // 적이 없을 경우 로그
+        if (!activeEnemies.iterator().hasNext()) {
+            return; // 적이 없으면 처리 필요 없음
+        }
+        
+        // 디버깅을 위한 주기적 로그 (매 초마다 모든 적의 상태를 확인)
+        long currentTime = System.currentTimeMillis();
+        if (currentTime % 1000 < 20) { // 약 20ms 이내일 때만 로그 출력하여 초당 한 번만
+            System.out.println("현재 활성 적 수: " + activeEnemies.size());
+            // 모든 적이 움직이고 있는지 확인
+            int i = 0;
+            for (GameEnemy enemy : activeEnemies) {
+                // 10개까지만 로그
+                if (i < 10) {
+                    System.out.println("적 #" + i + ": ID=" + enemy.getEnemyId() + 
+                                      ", 위치=(" + enemy.getX() + "," + enemy.getY() + 
+                                      "), 경로인덱스=" + enemy.getPathIndex() + 
+                                      ", 체력=" + enemy.getHealth() + 
+                                      ", 속도=" + enemy.getSpeed());
+                }
+                i++;
+            }
+        }
+        
         while (it.hasNext()) {
             GameEnemy enemy = it.next();
             
@@ -377,6 +401,7 @@ public class GameMapPanel extends JPanel {
                 
                 // 적 제거
                 it.remove();
+                System.out.println("적이 목적지에 도달하여 제거됨: " + enemy.getEnemyId() + ", 남은 생명력: " + life);
                 
                 // UI 업데이트 - 자원 패널에 반영될 수 있도록
                 
@@ -415,18 +440,50 @@ public class GameMapPanel extends JPanel {
             double distance = Math.sqrt(distX * distX + distY * distY);
             
             // 목표 지점에 도달했는지 확인
-            if (distance < enemy.getSpeed()) {
+            // 수정: 목표 지점에 충분히 근접하면 다음 경로 포인트로 이동
+            if (distance <= enemy.getSpeed() || distance < 2.0) {
                 // 다음 경로 포인트로 이동
-                enemy.setPathIndex(pathIndex + 1);
+                int nextIndex = pathIndex + 1;
+                enemy.setPathIndex(nextIndex);
                 
                 // 마지막 지점이었다면 목적지 도달
-                if (pathIndex + 1 >= pathPoints.size()) {
+                if (nextIndex >= pathPoints.size()) {
                     enemy.setReachedEnd(true);
+                    System.out.println("적 목적지 도달: " + enemy.getEnemyId());
+                } else {
+                    // 다음 목표 지점으로 즉시 이동 시작
+                    Point nextPoint = pathPoints.get(nextIndex);
+                    // 경로상 다음 지점을 향해 진행
+                    
+                    // 즉시 약간 이동시켜서 다음 포인트로 방향 전환 시작
+                    int nextTargetX = nextPoint.x * GRID_SIZE + GRID_SIZE/2;
+                    int nextTargetY = nextPoint.y * GRID_SIZE + GRID_SIZE/2;
+                    
+                    // 시작 위치에서 살짝 이동 (다음 지점 방향으로)
+                    double nextDistX = nextTargetX - targetX;
+                    double nextDistY = nextTargetY - targetY;
+                    double nextDistance = Math.sqrt(nextDistX * nextDistX + nextDistY * nextDistY);
+                    
+                    if (nextDistance > 0) {
+                        double ratio = Math.min(1.0, enemy.getSpeed() / nextDistance);
+                        int moveX = (int)(targetX + nextDistX * ratio);
+                        int moveY = (int)(targetY + nextDistY * ratio);
+                        enemy.setPosition(moveX, moveY);
+                    }
                 }
             } else {
                 // 속도에 따른 이동
                 double speedX = (distX / distance) * enemy.getSpeed();
                 double speedY = (distY / distance) * enemy.getSpeed();
+                
+                // 수정: 속도가 0이 되지 않도록 보정
+                if (Math.abs(speedX) < 0.5 && Math.abs(speedY) < 0.5) {
+                    if (Math.abs(distX) > Math.abs(distY)) {
+                        speedX = distX > 0 ? 1 : -1;
+                    } else {
+                        speedY = distY > 0 ? 1 : -1;
+                    }
+                }
                 
                 enemy.setPosition(currentX + (int)speedX, currentY + (int)speedY);
             }
@@ -1394,14 +1451,24 @@ public class GameMapPanel extends JPanel {
         // 남은 스폰할 적 수
         final int[] remainingEnemies = {isBossWave ? 1 : enemyCount};
         
+        // 적 생성 간격 조정 - 웨이브가 높을수록 더 빠르게 등장
+        spawnDelay = Math.max(300, 1000 - (currentWave * 30)); // 300ms가 최소 간격
+        
+        System.out.println("웨이브 " + currentWave + " 시작: 적 " + (isBossWave ? 1 : enemyCount) + "마리, 생성 간격: " + spawnDelay + "ms");
+        
         enemySpawnTimer = new Timer(spawnDelay, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (remainingEnemies[0] > 0) {
                     spawnEnemy(isBossWave);
                     remainingEnemies[0]--;
+                    // 남은 적 수 확인 로그
+                    if (remainingEnemies[0] % 5 == 0 || remainingEnemies[0] < 5) {
+                        System.out.println("남은 적: " + remainingEnemies[0] + "마리");
+                    }
                 } else {
                     ((Timer)e.getSource()).stop();
+                    System.out.println("모든 적 생성 완료");
                 }
             }
         });
@@ -1455,11 +1522,19 @@ public class GameMapPanel extends JPanel {
         
         if (enemyModel != null) {
             // 적 객체 생성 (게임 화면에 표시될 적)
+            // 중요: speed 값이 0이거나 너무 작으면 적이 움직이지 않는 문제가 발생할 수 있음
+            // 최소 이동 속도를 보장하기 위해 speed 값을 검증하고 조정
+            int speed = enemyModel.getSpeed();
+            if (speed < 1) {
+                speed = 1; // 최소 속도 보장
+                System.out.println("경고: enemyId=" + enemyId + " 속도가 0 또는 음수, 최소값 1로 설정");
+            }
+            
             GameEnemy enemy = new GameEnemy(
                 enemyModel.getEnemyId(),
                 enemyModel.getEnemyName(),
                 enemyModel.getHealth() * healthMultiplier,
-                enemyModel.getSpeed(),
+                speed, // 유효한 속도 값 사용
                 enemyModel.getReward(),
                 enemyModel.getDamage()
             );
@@ -1470,6 +1545,17 @@ public class GameMapPanel extends JPanel {
                 enemy.setPosition(startPoint.x * GRID_SIZE + GRID_SIZE/2, 
                                  startPoint.y * GRID_SIZE + GRID_SIZE/2);
                 enemy.setPathIndex(0);
+                
+                // 진단 로그 추가
+                System.out.println("새 적 생성: ID=" + enemyId + 
+                                  ", 이름=" + enemyModel.getEnemyName() + 
+                                  ", 속도=" + speed + 
+                                  ", 경로 포인트=" + pathPoints.size() + 
+                                  ", 시작 위치=(" + startPoint.x + "," + startPoint.y + ")");
+            } else {
+                // pathPoints가 비어있는 경우에 대한 오류 처리
+                System.err.println("오류: 경로 포인트 목록이 비어 있습니다!");
+                return;
             }
             
             // 보스 또는 강력한 적(드래곤, 데몬, 마왕, 지옥의 군주)인 경우 크기 두 배
@@ -1481,6 +1567,8 @@ public class GameMapPanel extends JPanel {
             
             // 활성 적 목록에 추가
             activeEnemies.add(enemy);
+        } else {
+            System.err.println("오류: enemyId=" + enemyId + "에 해당하는 적 정보를 DB에서 가져올 수 없습니다!");
         }
     }
     

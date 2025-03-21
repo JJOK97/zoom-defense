@@ -69,10 +69,15 @@ public class EnemyDAO {
 	            enemy.setEnemy_id(enemyId);
 	            enemy.setEnemy_name(rs.getString("enemy_name"));
 	            enemy.setHealth(rs.getInt("health"));
-	            enemy.setDamage(rs.getInt("damage"));
-	            enemy.setReward(rs.getInt("reward"));
 	            enemy.setSpeed(rs.getInt("speed"));
+	            enemy.setReward(rs.getInt("reward"));
+	            enemy.setDamage(rs.getInt("damage"));
 	            
+	            // 검증 로그 추가
+	            System.out.println("적 정보 조회 성공: ID=" + enemyId 
+	                              + ", 이름=" + enemy.getEnemyName() 
+	                              + ", 속도=" + enemy.getSpeed()
+	                              + ", 체력=" + enemy.getHealth());
 	            
 	            return enemy;
 	        }
@@ -82,6 +87,7 @@ public class EnemyDAO {
 			e.printStackTrace();
 		}
 		
+		System.out.println("적 정보 조회 실패: ID=" + enemyId);
 		return null;
 	}
 }
