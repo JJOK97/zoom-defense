@@ -692,20 +692,17 @@ public class GameMapPanel extends JPanel {
 			// 웨이브 완료
 			waveInProgress = false;
 
-			// 모든 적 처치 완료했을 때
-			if (killedEnemies >= totalEnemies) {
-				// 웨이브 완료 보너스 점수
-				int waveBonus = currentWave * 100;
-				score += waveBonus;
+			// 웨이브 완료 보너스 점수
+			int waveBonus = currentWave * 100;
+			score += waveBonus;
 
-				// 마지막 웨이브인지 확인
-				if (currentWave < 20) {
-					// 카운트다운 표시 및 다음 웨이브 자동 시작
-					startWaveCountdown();
-				} else {
-					// 모든 웨이브 클리어
-					gameWin();
-				}
+			// 마지막 웨이브인지 확인
+			if (currentWave < 20) {
+				// 카운트다운 표시 및 다음 웨이브 자동 시작
+				startWaveCountdown();
+			} else {
+				// 모든 웨이브 클리어
+				gameWin();
 			}
 		}
 	}
