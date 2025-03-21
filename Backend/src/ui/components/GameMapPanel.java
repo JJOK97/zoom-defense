@@ -144,6 +144,8 @@ public class GameMapPanel extends JPanel {
 	// 타워 정보 캐시 추가
 	private Map<Integer, Tower> towerCache = new HashMap<>();
 
+	private int sessionId = -1; // 세션 ID 저장 변수 추가
+
 	/**
 	 * 기본 생성자
 	 */
@@ -773,16 +775,21 @@ public class GameMapPanel extends JPanel {
 		towerCache.put(tower.getTowerId(), tower);
 
 		// 세션 ID 가져오기 시도
-		int sessionId = 0;
-		if (getParent() != null && getParent().getParent() != null
-				&& getParent().getParent().getParent() instanceof GameRoomFrame) {
-			GameRoomFrame gameRoom = (GameRoomFrame) getParent().getParent().getParent();
-			sessionId = gameRoom.getGameSession().getSessionId();
-			System.out.println("세션 ID 확인: " + sessionId);
-		} else {
-			System.out.println("세션 ID를 찾을 수 없습니다.");
-			// 테스트용 세션 ID (실제 구현에서는 제거 필요)
-			sessionId = 1;
+		int sessionId = this.sessionId; // 먼저 직접 설정된 세션 ID 사용
+		
+		// 직접 설정된 세션 ID가 없으면 부모 컴포넌트에서 시도
+		if (sessionId <= 0) {
+			if (getParent() != null && getParent().getParent() != null
+					&& getParent().getParent().getParent() instanceof GameRoomFrame) {
+				GameRoomFrame gameRoom = (GameRoomFrame) getParent().getParent().getParent();
+				sessionId = gameRoom.getGameSession().getSessionId();
+				System.out.println("부모 컴포넌트에서 세션 ID 확인: " + sessionId);
+			} else {
+				System.out.println("세션 ID를 찾을 수 없습니다.");
+				// 테스트용 세션 ID (실제 구현에서는 제거 필요)
+				// sessionId = 1; // 이 줄은 주석 처리하거나 제거
+				return false; // 세션 ID가 없으면 타워 배치 실패
+			}
 		}
 
 		// 타워 배치 정보 생성
@@ -2041,5 +2048,11 @@ public class GameMapPanel extends JPanel {
 	public void setCurrentWave(int wave) {
 		this.currentWave = wave;
 		System.out.println("현재 웨이브 설정: " + wave);
+	}
+
+	// 세션 ID 설정 메소드 추가
+	public void setSessionId(int sessionId) {
+		this.sessionId = sessionId;
+		System.out.println("GameMapPanel에 세션 ID 설정됨: " + sessionId);
 	}
 }

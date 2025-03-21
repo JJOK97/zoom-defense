@@ -259,6 +259,14 @@ public class GameRoomFrame extends JFrame {
      */
     private GameMapPanel createGameMapPanel() {
         GameMapPanel panel = new GameMapPanel();
+        // 게임 세션에서 초기 설정 로드
+        if (gameSession != null) {
+            panel.setMoney(gameSession.getMoney());
+            panel.setLife(gameSession.getLife());
+            panel.setScore(gameSession.getScore());
+            panel.setCurrentWave(gameSession.getWave());
+            panel.setSessionId(gameSession.getSessionId()); // 세션 ID 설정 추가
+        }
         panel.setBackground(new Color(50, 50, 50));
         panel.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 2));
         
@@ -441,6 +449,9 @@ public class GameRoomFrame extends JFrame {
             
             // GameMapPanel의 현재 웨이브 설정
             gameMapPanel.setCurrentWave(gameSession.getWave());
+            
+            // GameMapPanel에 세션 ID 설정
+            gameMapPanel.setSessionId(gameSession.getSessionId());
             
             int sessionId = gameSession.getSessionId();
             // 타워 배치 정보 로드 및 화면에 표시
