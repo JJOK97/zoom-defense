@@ -347,7 +347,12 @@ public class GameRoomFrame extends JFrame {
         int width = getWidth();
         int height = getHeight();
         
-        // 게임맵 크기는 이미 고정되어 있으므로 추가 조정 불필요
+        // 게임맵 크기 동적 조정 추가
+        if (gameMapPanel != null) {
+            // 게임 맵 패널을 화면 크기에 맞게 조정
+            int mapSize = Math.min(width - 40, height - 200); // 여백 고려
+            gameMapPanel.adjustSize(mapSize, mapSize);
+        }
         
         // 자원 및 웨이브 정보 패널 크기 조정
         if (resourcePanel != null && waveInfoPanel != null) {

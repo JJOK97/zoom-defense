@@ -10,6 +10,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.Component;
+import java.awt.Container;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -115,22 +117,62 @@ public class MainGameFrame extends JFrame {
 	private void adjustComponentSizes() {
 		int width = getWidth();
 		int height = getHeight();
-
+		
 		// 폰트 크기 조정
 		if (lblTitle != null) {
 			lblTitle.setFont(UIConstants.getScaledTitleFont(width));
 		}
-
-		// 버튼 크기 조정
+		
+		// 버튼 크기 조정 - 화면 비율에 맞게 조정
 		if (btnLogin != null && btnRegister != null) {
 			int buttonWidth = Math.max(150, width / 6);
 			int buttonHeight = Math.max(40, height / 15);
 			btnLogin.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
 			btnRegister.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
+			
+			// 버튼 폰트 크기도 조정
+			btnLogin.setFont(UIConstants.getScaledPixelFont(width / 20));
+			btnRegister.setFont(UIConstants.getScaledPixelFont(width / 20));
 		}
-
+		
+		// 입력 필드 크기 조정 - 화면 비율에 맞게
+		if (txtLoginId != null && txtPassword != null) {
+			// 화면 너비에 비례하는 입력 필드 크기
+			int textFieldWidth = Math.max(200, width / 4);  // 비율 조정
+			int textFieldHeight = Math.max(30, height / 25); // 높이 비율 조정
+			
+			Dimension textFieldSize = new Dimension(textFieldWidth, textFieldHeight);
+			txtLoginId.setPreferredSize(textFieldSize);
+			txtPassword.setPreferredSize(textFieldSize);
+			
+			// 폰트 크기도 화면 크기에 맞게 조정
+			float fontSize = Math.max(12f, width / 80f);
+			txtLoginId.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
+			txtPassword.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
+		}
+		
+		// 모든 라벨의 폰트 크기 조정
+		for (Component comp : getContentPane().getComponents()) {
+			adjustFontForLabels(comp, width);
+		}
+		
 		revalidate();
 		repaint();
+	}
+
+	/**
+	 * 컴포넌트 내의 모든 라벨의 폰트 크기를 조정
+	 */
+	private void adjustFontForLabels(Component component, int width) {
+		if (component instanceof JLabel && !(component instanceof PixelLabel)) {
+			JLabel label = (JLabel) component;
+			float fontSize = Math.max(12f, width / 80f);
+			label.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
+		} else if (component instanceof Container) {
+			for (Component child : ((Container) component).getComponents()) {
+				adjustFontForLabels(child, width);
+			}
+		}
 	}
 
 	/**
@@ -186,8 +228,11 @@ public class MainGameFrame extends JFrame {
 		gbc.gridy = 0;
 		loginPanel.add(lblId, gbc);
 
-		// 아이디 입력 필드
+		// 아이디 입력 필드 - 초기 크기 설정
+		int textFieldWidth = Math.max(200, getWidth() / 4);
+		int textFieldHeight = Math.max(30, getHeight() / 25);
 		txtLoginId = new PixelTextField(30, UIConstants.getPixelFont());
+		txtLoginId.setPreferredSize(new Dimension(textFieldWidth, textFieldHeight));
 		gbc.gridx = 1;
 		gbc.gridy = 0;
 		loginPanel.add(txtLoginId, gbc);
@@ -200,8 +245,9 @@ public class MainGameFrame extends JFrame {
 		gbc.gridy = 1;
 		loginPanel.add(lblPassword, gbc);
 
-		// 비밀번호 입력 필드
+		// 비밀번호 입력 필드 - 초기 크기 설정
 		txtPassword = new PixelPasswordField(30, UIConstants.getPixelFont());
+		txtPassword.setPreferredSize(new Dimension(textFieldWidth, textFieldHeight));
 		gbc.gridx = 1;
 		gbc.gridy = 1;
 		loginPanel.add(txtPassword, gbc);

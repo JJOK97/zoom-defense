@@ -11,6 +11,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
+import java.awt.Component;
+import java.awt.Container;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -137,30 +139,62 @@ public class SignUpFrame extends JFrame {
             lblSubtitle.setFont(UIConstants.getScaledPixelFont(width));
         }
         
-        // 버튼 크기 조정
+        // 버튼 크기 조정 - 화면 비율에 맞게 조정
         if (btnRegister != null && btnGoBack != null) {
             int buttonWidth = Math.max(150, width / 6);
             int buttonHeight = Math.max(40, height / 15);
             btnRegister.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
             btnGoBack.setPreferredSize(new Dimension(buttonWidth, buttonHeight));
+            
+            // 버튼 폰트 크기도 조정
+            btnRegister.setFont(UIConstants.getScaledPixelFont(width / 20));
+            btnGoBack.setFont(UIConstants.getScaledPixelFont(width / 20));
         }
         
-        // InputBox 크기 조정
+        // InputBox 크기 조정 - 화면 비율에 맞게 조정
         if (txtRegisterId != null && txtRegisterPassword != null && 
             txtConfirmPassword != null && txtNickname != null) {
             
-            int textFieldWidth = Math.max(200, width / 5);
-            int textFieldHeight = Math.max(25, height / 30);
+            // 화면 너비에 비례하는 입력 필드 크기
+            int textFieldWidth = Math.max(250, width / 4);
+            int textFieldHeight = Math.max(35, height / 25);
             
             Dimension textFieldSize = new Dimension(textFieldWidth, textFieldHeight);
             txtRegisterId.setPreferredSize(textFieldSize);
             txtRegisterPassword.setPreferredSize(textFieldSize);
             txtConfirmPassword.setPreferredSize(textFieldSize);
             txtNickname.setPreferredSize(textFieldSize);
+            
+            // 폰트 크기도 화면 크기에 맞게 조정
+            float fontSize = Math.max(12f, width / 80f);
+            txtRegisterId.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
+            txtRegisterPassword.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
+            txtConfirmPassword.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
+            txtNickname.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
+        }
+        
+        // 라벨 폰트 크기 조정 (메소드는 제가 추가했지만 레이블들의 변수명을 찾을 수 없어 약간 다르게 접근)
+        for (Component comp : mainPanel.getComponents()) {
+            adjustFontForLabels(comp, width);
         }
         
         revalidate();
         repaint();
+    }
+    
+    /**
+     * 컴포넌트 내의 모든 라벨의 폰트 크기를 조정
+     */
+    private void adjustFontForLabels(Component component, int width) {
+        if (component instanceof JLabel && !(component instanceof PixelLabel)) {
+            JLabel label = (JLabel) component;
+            float fontSize = Math.max(12f, width / 80f);
+            label.setFont(UIConstants.getPixelFont().deriveFont(fontSize));
+        } else if (component instanceof Container) {
+            for (Component child : ((Container) component).getComponents()) {
+                adjustFontForLabels(child, width);
+            }
+        }
     }
     
     /**
@@ -217,11 +251,8 @@ public class SignUpFrame extends JFrame {
         gbc.gridy = 0;
         formPanel.add(lblId, gbc);
         
-        int textFieldWidth = Math.max(200, getWidth() / 5);
-        int textFieldHeight = Math.max(25, getHeight() / 20);
-        
         txtRegisterId = new PixelTextField(30, UIConstants.getPixelFont());
-        txtRegisterId.setPreferredSize(new Dimension(textFieldWidth, textFieldHeight));
+        txtRegisterId.setPreferredSize(new Dimension(250, 35));
         gbc.gridx = 1;
         gbc.gridy = 0;
         formPanel.add(txtRegisterId, gbc);
@@ -235,7 +266,7 @@ public class SignUpFrame extends JFrame {
         formPanel.add(lblPassword, gbc);
         
         txtRegisterPassword = new PixelPasswordField(30, UIConstants.getPixelFont());
-        txtRegisterPassword.setPreferredSize(new Dimension(textFieldWidth, textFieldHeight));
+        txtRegisterPassword.setPreferredSize(new Dimension(250, 35));
         gbc.gridx = 1;
         gbc.gridy = 1;
         formPanel.add(txtRegisterPassword, gbc);
@@ -249,7 +280,7 @@ public class SignUpFrame extends JFrame {
         formPanel.add(lblConfirmPassword, gbc);
         
         txtConfirmPassword = new PixelPasswordField(30, UIConstants.getPixelFont());
-        txtConfirmPassword.setPreferredSize(new Dimension(textFieldWidth, textFieldHeight));
+        txtConfirmPassword.setPreferredSize(new Dimension(250, 35));
         gbc.gridx = 1;
         gbc.gridy = 2;
         formPanel.add(txtConfirmPassword, gbc);
@@ -263,7 +294,7 @@ public class SignUpFrame extends JFrame {
         formPanel.add(lblNickname, gbc);
         
         txtNickname = new PixelTextField(30, UIConstants.getPixelFont());
-        txtNickname.setPreferredSize(new Dimension(textFieldWidth, textFieldHeight));
+        txtNickname.setPreferredSize(new Dimension(250, 35));
         gbc.gridx = 1;
         gbc.gridy = 3;
         formPanel.add(txtNickname, gbc);
