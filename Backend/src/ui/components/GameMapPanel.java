@@ -774,65 +774,57 @@ public class GameMapPanel extends JPanel {
 
 		// 세션 ID 가져오기 시도
 		int sessionId = 0;
-		try {
-			Container container = this;
-			while (container != null && !(container instanceof GameRoomFrame)) {
-				container = container.getParent();
-			}
-
-			if (container instanceof GameRoomFrame) {
-				GameRoomFrame gameRoom = (GameRoomFrame) container;
-				sessionId = gameRoom.getGameSession().getSessionId();
-				System.out.println("세션 ID 확인: " + sessionId);
-			} else {
-				System.out.println("GameRoomFrame을 찾을 수 없습니다.");
-				// 로컬에서만 타워 배치 (디버깅용)
-				towerMap[row][col] = tower.getTowerId();
-				money -= tower.getCost();
-				System.out.println("로컬에만 타워 설치: ID=" + tower.getTowerId() + ", 위치=(" + col + "," + row + ")");
-				repaint();
-				return true;
-			}
-		} catch (Exception e) {
-			System.out.println("세션 ID 가져오기 실패: " + e.getMessage());
-			e.printStackTrace();
-			// 로컬에서만 타워 배치 (디버깅용)
-			towerMap[row][col] = tower.getTowerId();
-			money -= tower.getCost();
-			System.out.println("예외 발생 후 로컬에만 타워 설치: ID=" + tower.getTowerId() + ", 위치=(" + col + "," + row + ")");
-			repaint();
-			return true;
+		if (getParent() != null && getParent().getParent() != null
+				&& getParent().getParent().getParent() instanceof GameRoomFrame) {
+			GameRoomFrame gameRoom = (GameRoomFrame) getParent().getParent().getParent();
+			sessionId = gameRoom.getGameSession().getSessionId();
+			System.out.println("세션 ID 확인: " + sessionId);
+		} else {
+			System.out.println("세션 ID를 찾을 수 없습니다.");
+			// 테스트용 세션 ID (실제 구현에서는 제거 필요)
+			sessionId = 1;
 		}
 
-		// 간단한 테스트: 로컬 타워 맵에 바로 설치
+		// 타워 배치 정보 생성
+		TowerPlacement placement = new TowerPlacement();
+		placement.setTowerId(tower.getTowerId());
+		placement.setSessionId(sessionId);
+		placement.setPositionX(col);
+		placement.setPositionY(row);
+
+		// 타워 배치 서비스를 통해 저장
+		TowerPlacementService placementService = new TowerPlacementServicelmpl();
+		boolean placementSuccess = placementService.placeTower(placement);
+
+		if (!placementSuccess) {
+			System.out.println("타워 배치 정보 저장 실패");
+			// 배치 실패해도 게임 진행을 위해 UI에는 표시 (실제 구현에서는 실패 처리 필요)
+		}
+
+		// 타워맵 업데이트
 		towerMap[row][col] = tower.getTowerId();
+
+		// 돈 차감
 		money -= tower.getCost();
-		System.out.println("로컬 타워 설치 성공: ID=" + tower.getTowerId() + ", 위치=(" + col + "," + row + ")");
 
-		try {
-			// 타워 배치 정보 생성
-			TowerPlacement placement = new TowerPlacement();
-			placement.setTowerId(tower.getTowerId());
-			placement.setSessionId(sessionId);
-			placement.setPositionX(col);
-			placement.setPositionY(row);
+		// 타워 배치 효과 표시
+		showTowerPlacementEffect(col, row);
 
-			// 서비스를 통해 DB에 저장 시도
-			TowerPlacementService service = new TowerPlacementServicelmpl();
-			boolean success = service.placeTower(placement);
+		// 점수 추가 (타워 배치 점수)
+		score += 5;
+		
+		// 타워 설치 성공 시 다음 타워 비용 증가
+		service.TowerServicelmpl.increaseTowerCost();
 
-			System.out.println("타워 배치 DB 저장 결과: " + (success ? "성공" : "실패"));
+		// 선택 해제
+		selectedCell = null;
 
-			// DB 저장 실패해도 UI상으로는 타워 표시 (이미 위에서 배치함)
-			repaint(); // 화면 갱신
-			return true;
-		} catch (Exception e) {
-			System.out.println("타워 배치 저장 중 예외 발생: " + e.getMessage());
-			e.printStackTrace();
-			// 이미 로컬에 타워를 배치했으므로 UI에는 표시됨
-			repaint();
-			return true;
-		}
+		// 화면 갱신
+		repaint();
+
+		// 타워 배치 성공
+		System.out.println("타워 배치 성공: 타워ID=" + tower.getTowerId() + ", 위치=(" + col + "," + row + ")");
+		return true;
 	}
 
 	// 타워 배치 효과 표시
