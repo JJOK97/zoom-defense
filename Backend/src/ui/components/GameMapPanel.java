@@ -39,9 +39,9 @@ import model.TowerPlacement;
 import service.SessionService;
 import service.SessionServiceImpl;
 import service.TowerService;
-import service.TowerServicelmpl;
+import service.TowerServiceImpl;
 import service.TowerPlacementService;
-import service.TowerPlacementServicelmpl;
+import service.TowerPlacementServiceImpl;
 import dao.TowerDAO;
 
 /**
@@ -626,9 +626,15 @@ public class GameMapPanel extends JPanel {
 
 								// 처치한 적 카운트 증가
 								killedEnemies++;
+								
+								// WaveInfoPanel 업데이트 - 진행 상황 반영
+								if (waveInfoPanel != null) {
+									waveInfoPanel.updateWaveProgress(killedEnemies, totalEnemies);
+								}
 
 								// 점수 증가 - 적의 종류에 따라 다른 점수 부여
 								int enemyScore = target.getReward() * 10; // 보상금의 10배를 점수로
+								
 								score += enemyScore;
 
 								// 적 제거
@@ -800,7 +806,7 @@ public class GameMapPanel extends JPanel {
 		placement.setPositionY(row);
 
 		// 타워 배치 서비스를 통해 저장
-		TowerPlacementService placementService = new TowerPlacementServicelmpl();
+		TowerPlacementService placementService = new TowerPlacementServiceImpl();
 		boolean placementSuccess = placementService.placeTower(placement);
 
 		if (!placementSuccess) {
@@ -821,7 +827,7 @@ public class GameMapPanel extends JPanel {
 		score += 5;
 		
 		// 타워 설치 성공 시 다음 타워 비용 증가
-		service.TowerServicelmpl.increaseTowerCost();
+		TowerServiceImpl.increaseTowerCost();
 
 		// 선택 해제
 		selectedCell = null;
@@ -947,7 +953,7 @@ public class GameMapPanel extends JPanel {
 		money -= upgradeCost;
 
 		// DB에도 업데이트
-		TowerPlacementService towerPlacementService = new TowerPlacementServicelmpl();
+		TowerPlacementService towerPlacementService = new TowerPlacementServiceImpl();
 		int sessionId = 0;
 
 		// 상위 컴포넌트에서 세션 ID 가져오기

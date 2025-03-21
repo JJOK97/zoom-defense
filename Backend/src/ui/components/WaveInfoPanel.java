@@ -140,9 +140,22 @@ public class WaveInfoPanel extends JPanel {
 	public void updateWaveProgress(int killed, int total) {
 		lblProgress.setText("적 " + killed + "/" + total + " 처치");
 
-		int progressPercent = total > 0 ? (killed * 100) / total : 0;
-		progressBar.setValue(progressPercent);
+		// 웨이브 시작 시에는 프로그레스 바를 100%로 설정하고, 적을 처치할수록 감소시킵니다.
+		int remainingPercent = total > 0 ? 100 - ((killed * 100) / total) : 0;
+		progressBar.setValue(remainingPercent);
 		progressBar.setString(killed + "/" + total);
+		
+		// 남은 적의 비율에 따라 색상 변경
+		if (remainingPercent > 66) {
+			// 적이 많이 남았을 때 (66% 이상) - 빨간색
+			progressBar.setForeground(new Color(200, 50, 50));
+		} else if (remainingPercent > 33) {
+			// 적이 중간쯤 남았을 때 (33% ~ 66%) - 노란색
+			progressBar.setForeground(new Color(220, 180, 50));
+		} else {
+			// 적이 거의 다 처치되었을 때 (33% 이하) - 초록색
+			progressBar.setForeground(new Color(50, 180, 50));
+		}
 	}
 
 }

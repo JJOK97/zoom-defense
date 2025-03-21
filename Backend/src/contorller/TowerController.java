@@ -3,9 +3,9 @@ package contorller;
 import model.Tower;
 import model.TowerPlacement;
 import service.TowerPlacementService;
-import service.TowerPlacementServicelmpl;
+import service.TowerPlacementServiceImpl;
 import service.TowerService;
-import service.TowerServicelmpl;
+import service.TowerServiceImpl;
 
 public class TowerController {
 	private TowerService towerService;
@@ -13,8 +13,8 @@ public class TowerController {
 
 	// 생성자
 	public TowerController() {
-		this.towerService = new TowerServicelmpl();
-		this.towerPlacementService = new TowerPlacementServicelmpl();
+		this.towerService = new TowerServiceImpl();
+		this.towerPlacementService = new TowerPlacementServiceImpl();
 	}
 	
 	public Tower getTowerById(int id) {

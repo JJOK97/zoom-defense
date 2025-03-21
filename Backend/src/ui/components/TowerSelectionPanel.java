@@ -23,7 +23,7 @@ import javax.swing.border.TitledBorder;
 import contorller.TowerController;
 import model.Tower;
 import service.TowerService;
-import service.TowerServicelmpl;
+import service.TowerServiceImpl;
 import ui.components.common.PixelButton;
 import ui.components.common.PixelLabel;
 import ui.components.common.UIConstants;
@@ -688,7 +688,7 @@ public class TowerSelectionPanel extends JPanel {
         int col = (int) selectedCell.getX();
         
         // 타워 서비스에서 1레벨 타워 가져오기
-        TowerService towerService = new TowerServicelmpl();
+        TowerService towerService = new TowerServiceImpl();
         Tower tower = null;
         
         try {

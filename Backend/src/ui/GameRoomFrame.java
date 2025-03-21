@@ -111,7 +111,7 @@ public class GameRoomFrame extends JFrame {
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         
         // 타워 비용 초기화
-        service.TowerServicelmpl.resetTowerCost();
+        service.TowerServiceImpl.resetTowerCost();
         
         // 창 닫기 버튼 처리
         addWindowListener(new java.awt.event.WindowAdapter() {

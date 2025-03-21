@@ -3,11 +3,11 @@ package service;
 import dao.TowerDAO;
 import model.TowerPlacement;
 
-public class TowerPlacementServicelmpl implements TowerPlacementService {
+public class TowerPlacementServiceImpl implements TowerPlacementService {
 
 	private TowerDAO towerDao;
 
-	public TowerPlacementServicelmpl() {
+	public TowerPlacementServiceImpl() {
 		this.towerDao = new TowerDAO();
 	}
 

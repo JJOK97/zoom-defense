@@ -3,13 +3,13 @@ package service;
 import dao.TowerDAO;
 import model.Tower;
 
-public class TowerServicelmpl implements TowerService {
+public class TowerServiceImpl implements TowerService {
 	private TowerDAO towerDAO;
 	private static final int INITIAL_TOWER_COST = 30; // 초기 타워 비용
 	private static final float COST_INCREASE_RATE = 1.1f; // 타워 비용 증가율 (10%)
 	private static int currentTowerCost = INITIAL_TOWER_COST; // 현재 타워 비용
 
-	public TowerServicelmpl() {
+	public TowerServiceImpl() {
 		this.towerDAO = new TowerDAO();
 	}
 
