@@ -1432,8 +1432,8 @@ public class GameMapPanel extends JPanel {
 			enemySpawnTimer.stop();
 		}
 
-		// 보스 웨이브 체크 (10, 20)
-		final boolean isBossWave = (currentWave == 10 || currentWave == 20);
+		// 보스 웨이브 체크 (10, 15, 20)
+		final boolean isBossWave = (currentWave == 10 || currentWave == 15 || currentWave == 20);
 
 		// 남은 스폰할 적 수
 		final int[] remainingEnemies = { isBossWave ? 1 : enemyCount };
@@ -1476,6 +1476,8 @@ public class GameMapPanel extends JPanel {
 		if (isBoss) {
 			if (currentWave == 10) {
 				enemyId = 10; // 10웨이브 보스: 고대 드래곤
+			} else if (currentWave == 15) {
+				enemyId = 11; // 15웨이브 보스: 마왕
 			} else if (currentWave == 20) {
 				enemyId = 12; // 20웨이브 보스: 지옥의 군주
 			} else {
