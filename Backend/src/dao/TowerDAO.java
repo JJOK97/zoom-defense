@@ -65,7 +65,7 @@ public class TowerDAO {
 				int upgradeCost = rs.getInt("UPGRADE_COST");
 
 				// 타워 객체 생성 후 리스트에 추가
-				Tower t = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
+				Tower t = new Tower(towerId, towerName, damage, range, attackSpeed, cost, upgradeCost, towerLevel);
 				towerList.add(t);
 			}
 
@@ -120,7 +120,7 @@ public class TowerDAO {
 				int cost = rs.getInt("COST");
 				int upgradeCost = rs.getInt("UPGRADE_COST");
 
-				Tower t = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
+				Tower t = new Tower(towerId, towerName, damage, range, attackSpeed, cost, upgradeCost, towerLevel);
 				towerList.add(t);
 			}
 
@@ -172,8 +172,8 @@ public class TowerDAO {
 				int attackSpeed = rs.getInt("ATTACK_SPEED");
 				int cost = rs.getInt("COST");
 				int upgradeCost = rs.getInt("UPGRADE_COST");
-
-				Tower t = new Tower(towerId, towerName, towerLevel, damage, range, attackSpeed, cost, upgradeCost);
+				
+				Tower t = new Tower(towerId, towerName, damage, range, attackSpeed, cost, upgradeCost, towerLevel);
 				towerList.add(t);
 			}
 
