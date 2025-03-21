@@ -439,6 +439,9 @@ public class GameRoomFrame extends JFrame {
             gameMapPanel.setMoney(gameSession.getMoney());
             waveInfoPanel.updateWaveNumber(gameSession.getWave());
             
+            // GameMapPanel의 현재 웨이브 설정
+            gameMapPanel.setCurrentWave(gameSession.getWave());
+            
             int sessionId = gameSession.getSessionId();
             // 타워 배치 정보 로드 및 화면에 표시
             System.out.println("타워 배치 정보 로드 시작: 세션 ID = " + sessionId);

@@ -2041,4 +2041,13 @@ public class GameMapPanel extends JPanel {
 		revalidate();
 		repaint();
 	}
+
+	/**
+	 * 현재 웨이브 설정
+	 * @param wave 웨이브 번호
+	 */
+	public void setCurrentWave(int wave) {
+		this.currentWave = wave;
+		System.out.println("현재 웨이브 설정: " + wave);
+	}
 }
