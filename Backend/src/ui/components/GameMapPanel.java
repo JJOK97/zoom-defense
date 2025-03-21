@@ -691,17 +691,38 @@ public class GameMapPanel extends JPanel {
 			enemySpawnTimer.stop();
 		}
 
+		// 최종 점수 표시
+		int finalScore = (currentWave * 100) + (killedEnemies * 10);
+
 		// 게임 오버 메시지 표시
-		JOptionPane.showMessageDialog(this, "게임 오버!\n생명력이 모두 소진되었습니다.\n웨이브 " + currentWave + "에서 패배했습니다.", "게임 오버",
-				JOptionPane.INFORMATION_MESSAGE);
+		String gameOverMessage = "게임 오버!\n생명력이 모두 소진되었습니다.\n웨이브 " + currentWave + "에서 패배했습니다.\n최종 점수: " + finalScore;
+		
+		// 다시하기/랭킹화면 선택 옵션
+		String[] options = {"다시 하기", "랭킹 화면으로 가기", "게임 선택으로 돌아가기"};
+		int choice = JOptionPane.showOptionDialog(this, 
+				gameOverMessage, 
+				"게임 오버", 
+				JOptionPane.YES_NO_CANCEL_OPTION,
+				JOptionPane.INFORMATION_MESSAGE, 
+				null, 
+				options, 
+				options[0]);
 
 		// GameRoomFrame에 게임 오버 알림
-		// 부모 컴포넌트를 찾아 GameRoomFrame 인스턴스 확인
 		Container parent = getParent();
 		while (parent != null) {
 			if (parent instanceof JFrame) {
 				if (parent instanceof GameRoomFrame) {
-					((GameRoomFrame) parent).handleGameOver();
+					GameRoomFrame gameRoom = (GameRoomFrame)parent;
+					
+					// 선택에 따른 처리
+					if (choice == 0) { // 다시 하기
+						gameRoom.restartGame();
+					} else if (choice == 1) { // 랭킹 화면으로 가기
+						gameRoom.showRankingScreen();
+					} else { // 게임 선택으로 돌아가기
+						gameRoom.handleGameOver();
+					}
 					return;
 				}
 				break;
@@ -1651,14 +1672,38 @@ public class GameMapPanel extends JPanel {
 	 * 모든 웨이브 클리어 (게임 승리)
 	 */
 	private void gameWin() {
-		JOptionPane.showMessageDialog(this, "축하합니다! 모든 웨이브를 클리어했습니다!", "게임 승리", JOptionPane.INFORMATION_MESSAGE);
+		// 최종 점수 계산 (웨이브 * 100 + 처치한 적 수 * 10)
+		int finalScore = (currentWave * 100) + (killedEnemies * 10);
+		
+		// 승리 메시지
+		String winMessage = "축하합니다! 모든 웨이브를 클리어했습니다!\n최종 점수: " + finalScore;
+		
+		// 다시하기/랭킹화면 선택 옵션
+		String[] options = {"다시 하기", "랭킹 화면으로 가기", "게임 선택으로 돌아가기"};
+		int choice = JOptionPane.showOptionDialog(this, 
+				winMessage, 
+				"게임 승리", 
+				JOptionPane.YES_NO_CANCEL_OPTION,
+				JOptionPane.INFORMATION_MESSAGE, 
+				null, 
+				options, 
+				options[0]);
 
 		// 게임 종료 처리
 		Container parent = getParent();
 		while (parent != null) {
 			if (parent instanceof JFrame) {
 				if (parent instanceof GameRoomFrame) {
-					((GameRoomFrame) parent).handleGameWin();
+					GameRoomFrame gameRoom = (GameRoomFrame)parent;
+					
+					// 선택에 따른 처리
+					if (choice == 0) { // 다시 하기
+						gameRoom.restartGame();
+					} else if (choice == 1) { // 랭킹 화면으로 가기
+						gameRoom.showRankingScreen();
+					} else { // 게임 선택으로 돌아가기
+						gameRoom.handleGameWin();
+					}
 					return;
 				}
 				break;

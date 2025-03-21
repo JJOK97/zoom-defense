@@ -36,6 +36,7 @@ import ui.components.common.PixelBackgroundPanel;
 import ui.components.common.PixelButton;
 import ui.components.common.UIConstants;
 import contorller.RankingController;
+import ui.RankingFrame;
 
 /**
  * ZOOM Defense 게임 룸 화면 구현 클래스
@@ -592,6 +593,66 @@ public class GameRoomFrame extends JFrame {
         // 게임 선택 화면으로 돌아가기
         GameSelectionFrame selectionFrame = new GameSelectionFrame(loggedInUser, currentBounds, currentMaximized);
         selectionFrame.setVisible(true);
+    }
+    
+    /**
+     * 게임 재시작
+     */
+    public void restartGame() {
+        // 게임 타이머 정지
+        if (gameTimer != null) {
+            gameTimer.stop();
+        }
+        
+        // 게임 점수 계산 및 랭킹 등록
+        int finalScore = gameMapPanel.getScore();
+        gameSession.setScore(finalScore);
+        
+        // 랭킹 등록
+        RankingController rankingController = new RankingController();
+        boolean rankingAdded = rankingController.addRanking(loggedInUser.getUserId(), finalScore);
+        System.out.println("랭킹 등록 결과: " + (rankingAdded ? "성공" : "실패"));
+        
+        // 현재 창의 상태 저장
+        boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+        Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+        
+        // 새 게임 세션 시작
+        dispose();
+        Session newSession = new Session();
+        newSession.setUserId(loggedInUser.getUserId());
+        
+        // 동일한 위치와 크기로 새 게임 창 생성
+        GameRoomFrame newGame = new GameRoomFrame(loggedInUser, newSession, currentBounds, currentMaximized);
+        newGame.setVisible(true);
+    }
+    
+    /**
+     * 랭킹 화면 표시
+     */
+    public void showRankingScreen() {
+        // 게임 타이머 정지
+        if (gameTimer != null) {
+            gameTimer.stop();
+        }
+        
+        // 게임 점수 계산 및 랭킹 등록
+        int finalScore = gameMapPanel.getScore();
+        gameSession.setScore(finalScore);
+        
+        // 랭킹 등록
+        RankingController rankingController = new RankingController();
+        boolean rankingAdded = rankingController.addRanking(loggedInUser.getUserId(), finalScore);
+        System.out.println("랭킹 등록 결과: " + (rankingAdded ? "성공" : "실패"));
+        
+        // 현재 창의 상태 저장
+        boolean currentMaximized = (getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH;
+        Rectangle currentBounds = currentMaximized ? frameBounds : getBounds();
+        
+        // 랭킹 화면 표시
+        dispose();
+        RankingFrame rankingFrame = new RankingFrame(loggedInUser, currentBounds, currentMaximized);
+        rankingFrame.setVisible(true);
     }
     
     /**
