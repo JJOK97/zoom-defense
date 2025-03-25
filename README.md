@@ -14,6 +14,33 @@
 
 <br>
 
+
+<table>
+	<tr >
+		<td align="center">
+		<strong>랜딩 페이지</strong>
+		</td>
+	</tr>
+	<tr>
+		<td align="center">
+			<img src="https://github.com/user-attachments/assets/e8db10a1-718a-4bb6-beff-ba141c329c38" alt="Landing Page">
+		</td>
+	</tr>
+</table>
+
+<table width="100%">
+  <tr>
+    <td align="center" width="50%"><b>스터디 생성</b></td>
+    <td align="center" width="50%"><b>문제 추천</b></td>
+  </tr>
+  <tr>
+    <td align="center" width="50%"><img src='https://github.com/user-attachments/assets/850c519c-059d-44aa-bee0-ae861c9d45a4' style="width:100%; height:auto;"></td>
+    <td align="center" width="50%"><img src='https://github.com/user-attachments/assets/4814f40a-7f5b-431c-ac52-06624ea38fd0' style="width:100%; height:auto;"></td>
+  </tr>
+</table>
+
+<br>
+
 ## **🛠️ 개발 스택**
 
 | 기술              | 사용 목적              |
